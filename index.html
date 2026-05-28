@@ -13,8 +13,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
   :root {
     /* Brand */
@@ -22,28 +20,25 @@
     --brand-glow: rgba(255,107,53,0.28);
     /* Steep-inspired warm canvas */
     --canvas: #FFFFFF;
-    --warm-mist: #FBE1D1;        /* Steep token, aligns with Crave's warm tone */
-    --cream: #FFF5EC;            /* legacy alias for existing markup */
-    --fog: #F7F7F8;              /* secondary surface */
-    --ink: #17191C;              /* primary text (Steep ink) */
-    --muted-stone: #4C4C4C;      /* secondary text */
-    --light-steel: #777B86;      /* muted */
-    --hint-grey: #A3A6AF;        /* placeholder */
-    /* Legacy aliases (mapped to Steep palette) */
+    --warm-mist: #FBE1D1;
+    --cream: #FFF5EC;
+    --fog: #F7F7F8;
+    --ink: #17191C;
+    --muted-stone: #4C4C4C;
+    --light-steel: #777B86;
+    --hint-grey: #A3A6AF;
     --grey-light: var(--fog);
     --grey-mid: var(--light-steel);
     --grey-dark: var(--ink);
-    /* Wheel slice colors (warm spectrum) */
     --slice-1: #FF6B35;
     --slice-2: #FFB347;
     --slice-3: #F59E0B;
     --slice-4: #FF8C42;
     --slice-5: #FFA552;
-    /* Steep shape & elevation tokens */
-    --radius-card: 24px;         /* Steep card radius */
+    --radius-card: 24px;
     --radius-img: 12px;
     --radius-input: 16px;
-    --radius-pill: 999px;        /* Steep pill button */
+    --radius-pill: 999px;
     --shadow-subtle: rgba(4,23,43,0.05) 0px 0px 0px 1px, rgba(0,0,0,0.08) 0px 12px 24px -6px;
     --shadow-elev: rgba(4,23,43,0.05) 0px 0px 0px 1px, rgba(0,0,0,0.1) 0px 20px 25px -5px;
     --safe-top: env(safe-area-inset-top, 0px);
@@ -56,7 +51,7 @@
     color: var(--ink);
     background: var(--canvas);
     overflow: hidden;
-    letter-spacing: -0.009em;       /* Steep tightening */
+    letter-spacing: -0.009em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -67,84 +62,223 @@
     padding-bottom: var(--safe-bottom);
   }
 
-  /* ── Screens ───────────────────────────────────────────────────── */
+  /* Screens */
   .screen { display: none; flex: 1; flex-direction: column; min-height: 0; }
   .screen.active { display: flex; }
 
-  /* ── Header ────────────────────────────────────────────────────── */
+  /* Header */
   header.brand {
     display: flex; align-items: center; gap: 10px;
     padding: 12px 20px 10px;
-    border-bottom: 1px solid var(--grey-light);
+    border-bottom: 1px solid var(--fog);
     background: #fff;
   }
   header.brand img { width: 32px; height: 32px; }
   header.brand .brand-text { display: flex; flex-direction: column; }
   header.brand h1 { margin: 0; font-size: 22px; font-weight: 800; color: var(--brand); letter-spacing: -0.015em; }
-  header.brand .tagline { margin: 1px 0 0; font-size: 11px; color: var(--grey-mid); }
+  header.brand .tagline { margin: 1px 0 0; font-size: 11px; color: var(--light-steel); }
 
-  /* ── Sub-page header bar ───────────────────────────────────────── */
+  /* Sub-page header bar */
   .nav-row {
     display: flex; align-items: center; justify-content: space-between;
     padding: 12px 16px 8px;
   }
   .nav-side { width: 64px; }
-  .nav-title { font-size: 17px; font-weight: 700; color: var(--grey-dark); }
+  .nav-title { font-size: 17px; font-weight: 700; color: var(--ink); }
   .back-btn {
     appearance: none; background: none; border: none;
     color: var(--brand); font-size: 16px; font-weight: 600;
     padding: 4px 0; cursor: pointer;
   }
-  .skip-btn { color: var(--grey-mid); font-size: 14px; font-weight: 600; }
-  .subtitle {
-    margin: 0 0 12px; font-size: 12px; color: var(--grey-mid); text-align: center;
-  }
+  .skip-btn { color: var(--light-steel); font-size: 14px; font-weight: 600; }
+  .subtitle { margin: 0 0 12px; font-size: 12px; color: var(--light-steel); text-align: center; }
   .subtitle.padded { padding: 0 24px; }
 
-  /* ── Step 1: locate ────────────────────────────────────────────── */
+  /* Step 1: locate */
   #map { flex: 1; min-height: 0; background: #e5e7eb; }
-  .bottom-panel { padding: 16px 24px calc(16px + var(--safe-bottom)); background: #fff; border-top: 1px solid var(--grey-light); }
-  .address-row {
-    display: flex; align-items: flex-start; gap: 8px;
-    font-size: 15px; color: var(--grey-dark); margin-bottom: 6px;
+  .bottom-panel {
+    padding: 14px 20px calc(16px + var(--safe-bottom));
+    background: #fff;
+    border-top: 1px solid var(--fog);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
   }
-  .address-row .pin { font-size: 16px; }
-  .address-row .text { flex: 1; line-height: 1.4; }
-  .range-hint { font-size: 12px; color: var(--grey-mid); margin: 0 0 12px 24px; }
-  .err-text { font-size: 12px; color: #EF4444; margin: 0 0 8px 24px; }
+  .panel-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .panel-row.between { justify-content: space-between; }
+  .search-input-wrap {
+    flex: 1; position: relative;
+    background: var(--fog); border-radius: var(--radius-pill);
+    padding: 0 14px 0 38px;
+    height: 42px;
+    display: flex; align-items: center;
+    transition: background 0.15s;
+  }
+  .search-input-wrap:focus-within { background: #fff; box-shadow: var(--shadow-subtle); }
+  .search-input-wrap .pin-icon {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px; color: var(--light-steel);
+  }
+  .search-input-wrap input {
+    flex: 1; border: none; background: transparent;
+    font-family: inherit; font-size: 14px; color: var(--ink);
+    letter-spacing: -0.005em;
+    outline: none;
+    min-width: 0;
+  }
+  .search-input-wrap input::placeholder { color: var(--hint-grey); }
+
+  .gps-btn {
+    appearance: none; width: 42px; height: 42px;
+    border-radius: 50%; border: none;
+    background: var(--fog);
+    color: var(--brand); font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .gps-btn:hover { background: var(--warm-mist); }
+  .gps-btn:active { transform: scale(0.92); }
+
+  .radius-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .radius-row .label { color: var(--muted-stone); font-weight: 600; flex-shrink: 0; }
+  .radius-row .value { color: var(--brand); font-weight: 700; min-width: 56px; text-align: right; }
+  .radius-slider {
+    flex: 1; height: 4px; appearance: none;
+    background: var(--fog); border-radius: 4px;
+    outline: none;
+  }
+  .radius-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 2px 6px var(--brand-glow);
+    cursor: pointer;
+  }
+  .radius-slider::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--brand); border: none;
+    box-shadow: 0 2px 6px var(--brand-glow);
+    cursor: pointer;
+  }
+
+  .preset-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .preset-btn {
+    appearance: none; flex: 1; padding: 7px 0;
+    background: var(--fog); color: var(--muted-stone);
+    border: none; border-radius: var(--radius-pill);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    transition: all 0.15s;
+  }
+  .preset-btn.active {
+    background: var(--brand); color: #fff;
+    box-shadow: 0 2px 8px var(--brand-glow);
+  }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0 12px;
+    border-top: 1px solid var(--fog);
+    margin-top: 2px;
+  }
+  .toggle-row .label { font-size: 13px; color: var(--muted-stone); font-weight: 600; }
+  .toggle-row .sub { font-size: 11px; color: var(--hint-grey); margin-top: 2px; }
+  .toggle-switch {
+    appearance: none; position: relative;
+    width: 44px; height: 24px;
+    background: var(--fog); border-radius: 999px;
+    border: none; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-switch::before {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+  }
+  .toggle-switch.on { background: var(--brand); }
+  .toggle-switch.on::before { transform: translateX(20px); }
+
+  .err-text { font-size: 12px; color: #EF4444; margin: 4px 0 8px; text-align: center; }
 
   .primary-cta {
     appearance: none; width: 100%; padding: 16px 0;
     background: var(--brand); color: #fff;
     border: none; border-radius: var(--radius-pill);
-    font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+    font-family: inherit; font-size: 16px; font-weight: 700;
+    letter-spacing: -0.01em;
     box-shadow: var(--shadow-elev), 0 8px 18px var(--brand-glow);
     cursor: pointer;
     transition: transform 0.1s, opacity 0.1s, box-shadow 0.2s;
   }
   .primary-cta:active { transform: scale(0.98); opacity: 0.92; }
-  .primary-cta:disabled { background: var(--grey-light); color: var(--grey-mid); box-shadow: none; }
+  .primary-cta:disabled { background: var(--fog); color: var(--hint-grey); box-shadow: none; }
 
-  /* ── Step 2: wheel ─────────────────────────────────────────────── */
+  /* Step 2: wheel */
+  .wheel-scroll {
+    flex: 1; min-height: 0; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 16px;
+  }
+
+  .section-head {
+    padding: 14px 20px 6px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-head .title { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .section-head .hint { font-size: 11px; color: var(--light-steel); }
+
+  .chip-wrap {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding: 0 20px 12px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    background: var(--fog);
+    color: var(--ink);
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
+    border: none;
+  }
+  .chip.active {
+    background: var(--brand); color: #fff;
+    box-shadow: 0 4px 10px var(--brand-glow);
+  }
+  .chip .emoji { font-size: 14px; }
+  .chip .count { font-size: 11px; opacity: 0.7; margin-left: 2px; }
+  .chip.cuisine.active .count { opacity: 0.9; }
+
   .wheel-area {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    flex-direction: column; padding: 8px 16px 0; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; padding: 12px 16px 0;
   }
   .wheel-pointer {
     width: 0; height: 0;
     border-left: 12px solid transparent;
     border-right: 12px solid transparent;
-    border-top: 16px solid var(--grey-dark);
+    border-top: 16px solid var(--ink);
     margin-bottom: -4px;
     z-index: 5;
   }
   .wheel-outer {
-    width: 300px; height: 300px;
+    width: 290px; height: 290px;
     border-radius: 50%;
-    background: var(--grey-dark);
+    background: var(--ink);
     padding: 8px;
     position: relative;
-    max-width: 80vw; max-height: 80vw;
+    max-width: 78vw; max-height: 78vw;
   }
   .wheel {
     width: 100%; height: 100%;
@@ -152,12 +286,11 @@
     overflow: hidden;
     position: relative;
     transition: transform 4.2s cubic-bezier(0.17, 0.67, 0.32, 1);
-    /* slices rendered via conic-gradient set in JS */
   }
   .wheel .slice-label {
     position: absolute;
     top: 50%; left: 50%;
-    width: 90px;
+    width: 86px;
     text-align: center;
     color: #fff; font-size: 11px; font-weight: 800;
     text-shadow: 0 1px 2px rgba(0,0,0,0.25);
@@ -170,10 +303,10 @@
   .wheel-hub {
     position: absolute;
     top: 50%; left: 50%;
-    width: 80px; height: 80px;
-    margin: -40px 0 0 -40px;
+    width: 78px; height: 78px;
+    margin: -39px 0 0 -39px;
     background: #fff;
-    border: 3px solid var(--grey-dark);
+    border: 3px solid var(--ink);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
@@ -181,10 +314,7 @@
   }
   .wheel-hub img { width: 62%; height: 62%; object-fit: contain; }
 
-  .reveal-area {
-    padding: 16px 24px calc(24px + var(--safe-bottom));
-    min-height: 130px;
-  }
+  .reveal-area { padding: 14px 20px calc(20px + var(--safe-bottom)); min-height: 100px; }
   .winner-card {
     background: var(--warm-mist);
     border: none;
@@ -192,7 +322,7 @@
     padding: 20px;
     box-shadow: var(--shadow-subtle);
   }
-  .winner-label { font-size: 12px; font-weight: 700; color: var(--brand); margin-bottom: 10px; }
+  .winner-label { font-size: 12px; font-weight: 700; color: var(--brand); margin-bottom: 10px; letter-spacing: 0.5px; }
   .winner-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .winner-emoji-circle {
     width: 64px; height: 64px; border-radius: 32px;
@@ -200,46 +330,29 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 32px;
   }
-  .winner-name { font-size: 22px; font-weight: 800; color: var(--grey-dark); margin-bottom: 4px; }
-  .winner-meta { font-size: 13px; color: var(--grey-mid); }
+  .winner-name { font-size: 22px; font-weight: 800; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.015em; }
+  .winner-meta { font-size: 13px; color: var(--muted-stone); }
   .winner-btn-row { display: flex; gap: 10px; }
   .secondary-btn {
     appearance: none; flex: 1; padding: 13px 0;
     background: #fff; color: var(--brand);
     border: 1.5px solid var(--brand); border-radius: var(--radius-pill);
-    font-size: 14px; font-weight: 700; letter-spacing: -0.01em; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    letter-spacing: -0.01em; cursor: pointer;
   }
   .primary-btn {
     appearance: none; flex: 1.4; padding: 13px 0;
     background: var(--brand); color: #fff;
     border: none; border-radius: var(--radius-pill);
-    font-size: 14px; font-weight: 700; letter-spacing: -0.01em; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    letter-spacing: -0.01em; cursor: pointer;
     box-shadow: 0 6px 14px var(--brand-glow);
   }
   .primary-btn:active, .secondary-btn:active { opacity: 0.85; }
 
-  .spinning-hint { font-size: 14px; color: var(--grey-mid); text-align: center; padding-top: 20px; }
+  .spinning-hint { font-size: 14px; color: var(--light-steel); text-align: center; padding-top: 20px; }
 
-  /* ── Step 3: restaurant list ───────────────────────────────────── */
-  .context-chips {
-    display: flex; flex-wrap: wrap; gap: 8px;
-    padding: 0 16px 12px;
-    border-bottom: 1px solid var(--grey-light);
-  }
-  .chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 7px 14px;
-    border-radius: var(--radius-pill);
-    background: var(--fog);
-    color: var(--ink);
-    font-size: 12px; font-weight: 600; letter-spacing: -0.005em;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s, color 0.15s;
-  }
-  .chip.active { background: var(--brand); color: #fff; box-shadow: 0 4px 10px var(--brand-glow); }
-  .chip .emoji { font-size: 13px; }
-
+  /* Step 3: restaurant list */
   .restaurant-list {
     flex: 1; overflow-y: auto;
     padding: 12px 16px 96px;
@@ -255,44 +368,46 @@
     transition: transform 0.15s, box-shadow 0.2s;
   }
   .card:hover { box-shadow: var(--shadow-elev); }
-  .card:active { opacity: 0.75; }
+  .card:active { opacity: 0.8; }
   .card .rank {
-    position: absolute; top: 8px; left: 8px;
+    position: absolute; top: 10px; left: 10px;
     background: var(--brand); color: #fff;
-    border-radius: 12px; padding: 3px 8px;
+    border-radius: var(--radius-pill); padding: 3px 9px;
     font-size: 11px; font-weight: 800; z-index: 1;
   }
   .card .img {
     width: 96px; height: 96px;
-    background: var(--grey-light) center/cover no-repeat;
+    background: var(--fog) center/cover no-repeat;
     display: flex; align-items: center; justify-content: center;
     font-size: 36px;
   }
   .card .body { flex: 1; padding: 12px; min-width: 0; }
-  .card .name { font-size: 16px; font-weight: 700; color: var(--grey-dark); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card .addr { font-size: 12px; color: var(--grey-mid); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .name { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .addr { font-size: 12px; color: var(--light-steel); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .meta { display: flex; flex-wrap: wrap; gap: 10px; }
   .card .meta .rating { font-size: 12px; font-weight: 600; color: #F59E0B; }
-  .card .meta .dist { font-size: 12px; color: var(--grey-mid); }
+  .card .meta .dist { font-size: 12px; color: var(--light-steel); }
   .card .meta .open { font-size: 12px; font-weight: 600; color: #34C759; }
   .card .meta .closed { font-size: 12px; font-weight: 600; color: #EF4444; }
 
   .respin-cta-wrap {
     position: absolute; left: 0; right: 0; bottom: 0;
-    padding: 8px 24px calc(12px + var(--safe-bottom));
+    padding: 8px 20px calc(12px + var(--safe-bottom));
     background: rgba(255,255,255,0.96);
-    border-top: 1px solid var(--grey-light);
+    border-top: 1px solid var(--fog);
+    backdrop-filter: blur(8px);
   }
   .respin-cta {
     appearance: none; width: 100%; padding: 15px 0;
     background: #fff; color: var(--brand);
     border: 1.5px solid var(--brand); border-radius: var(--radius-pill);
-    font-size: 15px; font-weight: 700; letter-spacing: -0.01em; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    letter-spacing: -0.01em; cursor: pointer;
     box-shadow: var(--shadow-subtle);
   }
   .respin-cta:active { opacity: 0.75; }
 
-  /* ── Centered states (loading / empty / error) ─────────────────── */
+  /* Centered states */
   .center-state {
     flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -300,19 +415,19 @@
     text-align: center;
   }
   .center-state .emoji { font-size: 44px; margin-bottom: 12px; }
-  .center-state .msg { font-size: 15px; color: var(--grey-dark); margin: 12px 0 6px; }
-  .center-state .hint { font-size: 13px; color: var(--grey-mid); }
+  .center-state .msg { font-size: 15px; color: var(--ink); margin: 12px 0 6px; }
+  .center-state .hint { font-size: 13px; color: var(--light-steel); }
 
   .spinner {
     width: 36px; height: 36px;
-    border: 3px solid var(--grey-light);
+    border: 3px solid var(--fog);
     border-top-color: var(--brand);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Loading overlay ───────────────────────────────────────────── */
+  /* Loading overlay */
   #loading-overlay {
     position: fixed; inset: 0; z-index: 50;
     background: rgba(255,255,255,0.85);
@@ -320,9 +435,9 @@
     backdrop-filter: blur(6px);
   }
   #loading-overlay[hidden] { display: none !important; }
-  #loading-overlay .text { font-size: 14px; color: var(--grey-dark); font-weight: 600; }
+  #loading-overlay .text { font-size: 14px; color: var(--ink); font-weight: 600; }
 
-  /* ── API key input modal ──────────────────────────────────────── */
+  /* Modal */
   .modal-mask {
     position: fixed; inset: 0; z-index: 100;
     background: rgba(0,0,0,0.5);
@@ -335,8 +450,8 @@
     max-width: 380px; width: 100%;
     box-shadow: var(--shadow-elev);
   }
-  .modal-card h3 { margin: 0 0 8px; font-size: 18px; }
-  .modal-card p { margin: 0 0 16px; font-size: 13px; color: var(--grey-mid); line-height: 1.5; }
+  .modal-card h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -0.015em; }
+  .modal-card p { margin: 0 0 16px; font-size: 13px; color: var(--light-steel); line-height: 1.5; }
   .modal-card input {
     width: 100%; padding: 13px 16px; font-size: 14px;
     border: 1.5px solid var(--fog); border-radius: var(--radius-input);
@@ -345,14 +460,24 @@
     background: var(--fog);
     transition: border-color 0.15s, background 0.15s;
   }
-  .modal-card input:focus { background: #fff; }
-  .modal-card input:focus { outline: none; border-color: var(--brand); }
+  .modal-card input:focus { outline: none; background: #fff; border-color: var(--brand); }
+
+  /* Google Maps Autocomplete dropdown override (.pac-container) */
+  .pac-container {
+    border-radius: var(--radius-input) !important;
+    box-shadow: var(--shadow-elev) !important;
+    border: none !important;
+    margin-top: 4px;
+    font-family: inherit !important;
+  }
+  .pac-item { padding: 8px 12px; font-size: 13px; }
+  .pac-item:hover { background: var(--warm-mist); }
+  .pac-item-query { font-weight: 600; color: var(--ink); }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- Branding header (always shown) -->
   <header class="brand">
     <img src="logo.png" alt="Crave Logo" />
     <div class="brand-text">
@@ -362,36 +487,75 @@
   </header>
 
   <!-- ── Step 1: 定位 ─────────────────────────────────────────── -->
-  <section class="screen active" data-screen="locate" style="flex-direction:column;">
+  <section class="screen active" data-screen="locate">
     <div id="map"></div>
     <div class="bottom-panel">
-      <div class="address-row">
-        <span class="pin">📍</span>
-        <span class="text" id="address">取得位置中…</span>
+      <div class="panel-row">
+        <div class="search-input-wrap">
+          <span class="pin-icon">📍</span>
+          <input id="place-input" type="text" placeholder="搜尋地點或拖曳地圖" autocomplete="off" />
+        </div>
+        <button class="gps-btn" id="gps-btn" title="使用我的位置">📡</button>
       </div>
-      <p class="range-hint">搜尋範圍：2 公里</p>
+      <div class="preset-row">
+        <button class="preset-btn" data-radius="500">500m</button>
+        <button class="preset-btn" data-radius="1000">1km</button>
+        <button class="preset-btn active" data-radius="2000">2km</button>
+        <button class="preset-btn" data-radius="3000">3km</button>
+        <button class="preset-btn" data-radius="5000">5km</button>
+      </div>
+      <div class="radius-row">
+        <span class="label">搜尋範圍</span>
+        <input type="range" class="radius-slider" id="radius-slider" min="500" max="10000" step="100" value="2000" />
+        <span class="value" id="radius-value">2.0 km</span>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="label">只看營業中</div>
+          <div class="sub">過濾掉現在沒開的店</div>
+        </div>
+        <button class="toggle-switch on" id="open-now-toggle" aria-pressed="true"></button>
+      </div>
       <p class="err-text" id="locate-err" hidden></p>
       <button class="primary-cta" id="confirm-btn" disabled>確認此區域</button>
     </div>
   </section>
 
-  <!-- ── Step 2: 菜系轉盤 ────────────────────────────────────── -->
+  <!-- ── Step 2: 情境 + 菜系直選 + 轉盤 ───────────────────────── -->
   <section class="screen" data-screen="wheel">
     <div class="nav-row">
       <div class="nav-side"><button class="back-btn" data-back>‹ 返回</button></div>
-      <div class="nav-title">食遇轉盤</div>
+      <div class="nav-title">食遇選擇</div>
       <div class="nav-side"></div>
     </div>
-    <p class="subtitle"><span id="cuisine-count">0</span> 種菜系入圍</p>
-    <div class="wheel-area">
-      <div class="wheel-pointer"></div>
-      <div class="wheel-outer">
-        <div class="wheel" id="wheel"></div>
-        <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+
+    <div class="wheel-scroll">
+      <!-- 情境 chips（多選） -->
+      <div class="section-head">
+        <span class="title">心情情境</span>
+        <span class="hint">可多選，影響推薦排序</span>
       </div>
-    </div>
-    <div class="reveal-area" id="reveal-area">
-      <button class="primary-cta" id="spin-btn">🎯 轉！</button>
+      <div class="chip-wrap" id="context-chips-wheel"></div>
+
+      <!-- 偵測到的菜系 chips（單選跳過轉盤；不選則用整盤轉） -->
+      <div class="section-head">
+        <span class="title"><span id="cuisine-count">0</span> 種菜系入圍</span>
+        <span class="hint">直接點即跳餐廳；或下方按轉</span>
+      </div>
+      <div class="chip-wrap" id="cuisine-chips"></div>
+
+      <!-- 轉盤 -->
+      <div class="wheel-area">
+        <div class="wheel-pointer"></div>
+        <div class="wheel-outer">
+          <div class="wheel" id="wheel"></div>
+          <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+        </div>
+      </div>
+
+      <div class="reveal-area" id="reveal-area">
+        <button class="primary-cta" id="spin-btn">🎯 交給命運</button>
+      </div>
     </div>
   </section>
 
@@ -403,24 +567,21 @@
       <div class="nav-side"></div>
     </div>
     <p class="subtitle padded" id="list-subtitle"></p>
-    <div class="context-chips" id="context-chips"></div>
     <div class="restaurant-list" id="restaurant-list"></div>
     <div class="respin-cta-wrap">
-      <button class="respin-cta" id="list-respin-btn">🎯 再轉一次菜系</button>
+      <button class="respin-cta" id="list-respin-btn">🎯 再選一次</button>
     </div>
   </section>
 
-  <!-- Loading overlay -->
   <div id="loading-overlay" hidden>
     <div class="spinner"></div>
     <div class="text" id="loading-text">載入中…</div>
   </div>
 
-  <!-- API key modal -->
   <div class="modal-mask" id="key-modal" hidden>
     <div class="modal-card">
-      <h3>需要 Google Places API key</h3>
-      <p>第一次使用要設定 Google Places API key（New 版）。Key 存在這台裝置 localStorage，不上傳。</p>
+      <h3>需要 Google API key</h3>
+      <p>第一次使用要設定 Google API key（需啟用 Maps JavaScript API + Places API New）。Key 存在這台裝置 localStorage，不上傳。</p>
       <input id="key-input" type="text" placeholder="AIzaSy..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
       <button class="primary-cta" id="key-submit">儲存</button>
     </div>
@@ -428,15 +589,12 @@
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 'use strict';
 
 // ────────────────────────────────────────────────────────────────────
-// Constants (mirror RN app: lib/google-places.ts DISH_CATEGORIES)
+// Constants
 // ────────────────────────────────────────────────────────────────────
-const SEARCH_RADIUS_M = 2000;
 const MAX_WHEEL_SLICES = 12;
 const MIN_WHEEL_SLICES = 2;
 const SPIN_DURATION_MS = 4200;
@@ -469,14 +627,18 @@ const DISH_CATEGORIES = [
 ];
 
 const CONTEXT_TAGS = [
+  { id: 'budget_saver',  labelZh: '月底救星', emoji: '💰' },
+  { id: 'group_dining',  labelZh: '朋友聚餐', emoji: '🍻' },
   { id: 'solo_friendly', labelZh: '獨食友善', emoji: '🍽️' },
   { id: 'quick_bite',    labelZh: '趕時間',   emoji: '⚡' },
-  { id: 'budget_saver',  labelZh: '月底救星', emoji: '💰' },
   { id: 'chat_worthy',   labelZh: '適合聊天', emoji: '💬' },
+  { id: 'date_night',    labelZh: '約會夜',   emoji: '🌙' },
+  { id: 'family',        labelZh: '帶長輩',   emoji: '👨‍👩‍👧' },
+  { id: 'celebration',   labelZh: '慶祝場',   emoji: '🎉' },
 ];
 
 const PLACES_BASE = 'https://places.googleapis.com/v1';
-const PLACES_DETECT_MASK = 'places.id,places.primaryType';
+const PLACES_DETECT_MASK = 'places.id,places.primaryType,places.currentOpeningHours.openNow';
 const PLACES_SEARCH_MASK = [
   'places.id', 'places.displayName', 'places.shortFormattedAddress',
   'places.formattedAddress', 'places.location', 'places.rating',
@@ -485,29 +647,30 @@ const PLACES_SEARCH_MASK = [
 ].join(',');
 
 // ────────────────────────────────────────────────────────────────────
-// State (singleton, simple)
+// State
 // ────────────────────────────────────────────────────────────────────
 const state = {
   apiKey: localStorage.getItem('crave_places_key') || '',
   area: null,                    // { lat, lng, address, radius }
-  detectedCuisines: [],          // [{ category, restaurantCount }, …]
-  selectedCuisine: null,         // category obj
-  restaurants: [],               // raw places
-  rankedRestaurants: [],         // Top 3-5 by algo
-  selectedContext: null,         // tag obj
+  radius: 2000,
+  openNowOnly: true,
+  detectedCuisines: [],
+  selectedCuisine: null,
+  restaurants: [],
+  rankedRestaurants: [],
+  selectedContexts: new Set(),
   currentScreen: 'locate',
   navStack: ['locate'],
 };
 
 // ────────────────────────────────────────────────────────────────────
-// API key bootstrap (allow URL hash override for share / device transfer)
+// API key bootstrap
 // ────────────────────────────────────────────────────────────────────
 function readKeyFromHash() {
   const m = location.hash.match(/key=([A-Za-z0-9_-]+)/);
   if (m) {
     localStorage.setItem('crave_places_key', m[1]);
     state.apiKey = m[1];
-    // Strip the key from the URL to avoid accidental sharing
     history.replaceState(null, '', location.pathname + location.search);
     return true;
   }
@@ -535,9 +698,6 @@ function ensureKey() {
   });
 }
 
-// ────────────────────────────────────────────────────────────────────
-// Loading overlay
-// ────────────────────────────────────────────────────────────────────
 function setLoading(visible, text) {
   const ov = document.getElementById('loading-overlay');
   if (text) document.getElementById('loading-text').textContent = text;
@@ -554,7 +714,6 @@ function navigate(screenId, push = true) {
   target.classList.add('active');
   state.currentScreen = screenId;
   if (push) state.navStack.push(screenId);
-  // Fire mount handler
   if (screenId === 'wheel') onMountWheel();
   if (screenId === 'list') onMountList();
 }
@@ -571,54 +730,111 @@ document.querySelectorAll('[data-back]').forEach((btn) =>
 );
 
 // ────────────────────────────────────────────────────────────────────
-// Step 1: Leaflet map + geolocation
+// Step 1: Google Maps + Autocomplete + Geocoding
 // ────────────────────────────────────────────────────────────────────
-let map, marker, circle;
+let gmap, gmarker, gcircle, gautocomplete, ggeocoder;
 
-function initMap(lat, lng) {
-  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([lat, lng], 15);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-  marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-  circle = L.circle([lat, lng], {
-    radius: SEARCH_RADIUS_M,
-    color: '#FF6B35', weight: 2, fillColor: '#FF6B35', fillOpacity: 0.08,
-  }).addTo(map);
-
-  marker.on('dragend', () => {
-    const { lat, lng } = marker.getLatLng();
-    circle.setLatLng([lat, lng]);
-    state.area = { ...state.area, lat, lng };
-    reverseGeocode(lat, lng);
-  });
-  map.on('click', (e) => {
-    const { lat, lng } = e.latlng;
-    marker.setLatLng([lat, lng]);
-    circle.setLatLng([lat, lng]);
-    state.area = { ...state.area, lat, lng };
-    reverseGeocode(lat, lng);
+function loadGoogleMaps() {
+  return new Promise((resolve, reject) => {
+    if (window.google?.maps) return resolve();
+    window.__cravegmapsReady = () => resolve();
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${state.apiKey}&libraries=places&v=weekly&loading=async&callback=__cravegmapsReady&language=zh-TW&region=TW`;
+    s.async = true; s.defer = true;
+    s.onerror = () => reject(new Error('Maps JS API 載入失敗——請確認 GCP key 已啟用「Maps JavaScript API」'));
+    document.head.appendChild(s);
   });
 }
 
-function setAddress(text) {
-  document.getElementById('address').textContent = text;
-  document.getElementById('confirm-btn').disabled = !text || text.includes('取得位置');
+function initGoogleMap(lat, lng) {
+  const mapEl = document.getElementById('map');
+  gmap = new google.maps.Map(mapEl, {
+    center: { lat, lng },
+    zoom: 15,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    zoomControl: true,
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
+    gestureHandling: 'greedy',
+    clickableIcons: false,
+    styles: [
+      // Subtle Steep-ish desaturation for warm tone
+      { featureType: 'poi.business', stylers: [{ visibility: 'on' }] },
+      { featureType: 'transit', stylers: [{ visibility: 'simplified' }] },
+    ],
+  });
+  gmarker = new google.maps.Marker({
+    position: { lat, lng }, map: gmap, draggable: true,
+    title: '搜尋中心',
+  });
+  gcircle = new google.maps.Circle({
+    map: gmap, center: { lat, lng },
+    radius: state.radius,
+    strokeColor: '#FF6B35', strokeOpacity: 0.7, strokeWeight: 2,
+    fillColor: '#FF6B35', fillOpacity: 0.1,
+  });
+  ggeocoder = new google.maps.Geocoder();
+
+  gmarker.addListener('dragend', () => {
+    const p = gmarker.getPosition();
+    gcircle.setCenter(p);
+    state.area = { ...(state.area || {}), lat: p.lat(), lng: p.lng() };
+    reverseGeocode(p.lat(), p.lng());
+  });
+  gmap.addListener('click', (e) => {
+    const lat = e.latLng.lat(), lng = e.latLng.lng();
+    gmarker.setPosition({ lat, lng });
+    gcircle.setCenter({ lat, lng });
+    state.area = { ...(state.area || {}), lat, lng };
+    reverseGeocode(lat, lng);
+  });
+
+  // Autocomplete
+  const input = document.getElementById('place-input');
+  gautocomplete = new google.maps.places.Autocomplete(input, {
+    fields: ['geometry', 'formatted_address', 'name'],
+    componentRestrictions: undefined, // worldwide
+  });
+  gautocomplete.bindTo('bounds', gmap);
+  gautocomplete.addListener('place_changed', () => {
+    const place = gautocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) return;
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    gmap.panTo({ lat, lng });
+    gmap.setZoom(15);
+    gmarker.setPosition({ lat, lng });
+    gcircle.setCenter({ lat, lng });
+    state.area = { lat, lng, radius: state.radius, address: place.formatted_address || place.name || '' };
+    setAddressText(state.area.address);
+    fitCircleToView();
+  });
 }
 
-async function reverseGeocode(lat, lng) {
-  try {
-    // Use Nominatim (OSM) free reverse geocoding — no API key needed.
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=zh-TW`, {
-      headers: { 'User-Agent': 'Crave-Web/1.0' }
-    });
-    if (!r.ok) throw new Error('reverse geocode failed');
-    const data = await r.json();
-    const addr = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    // Trim country / postcode tail for brevity on mobile
-    const trimmed = addr.split(',').slice(0, 3).join(',').trim();
-    setAddress(trimmed);
-  } catch {
-    setAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-  }
+function setAddressText(text) {
+  const input = document.getElementById('place-input');
+  if (text) input.value = text;
+  document.getElementById('confirm-btn').disabled = !state.area;
+}
+
+function reverseGeocode(lat, lng) {
+  if (!ggeocoder) return;
+  ggeocoder.geocode({ location: { lat, lng }, language: 'zh-TW' }, (results, status) => {
+    if (status === 'OK' && results && results[0]) {
+      const addr = results[0].formatted_address.replace(/^.+?\d{3,5}\s*/, ''); // strip postal code prefix if any
+      state.area = { ...(state.area || {}), lat, lng, address: addr };
+      setAddressText(addr);
+    } else {
+      setAddressText(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+  });
+}
+
+function fitCircleToView() {
+  if (!gcircle || !gmap) return;
+  const bounds = gcircle.getBounds();
+  if (bounds) gmap.fitBounds(bounds, { top: 20, bottom: 20, left: 20, right: 20 });
 }
 
 function showLocateError(msg) {
@@ -627,12 +843,22 @@ function showLocateError(msg) {
   e.hidden = !msg;
 }
 
-function requestLocation() {
-  const fallback = { lat: 25.033, lng: 121.5654 }; // Taipei 101
+async function requestLocation() {
+  const fallback = { lat: 25.033, lng: 121.5654 };
+  setLoading(true, '載入地圖…');
+  try {
+    await loadGoogleMaps();
+  } catch (err) {
+    setLoading(false);
+    showLocateError(err.message);
+    return;
+  }
+  setLoading(false);
+
   if (!('geolocation' in navigator)) {
-    showLocateError('此瀏覽器不支援定位，請手動點地圖選擇');
-    state.area = { ...fallback, radius: SEARCH_RADIUS_M };
-    initMap(fallback.lat, fallback.lng);
+    showLocateError('此瀏覽器不支援定位，請手動點地圖或輸入位置');
+    state.area = { ...fallback, radius: state.radius };
+    initGoogleMap(fallback.lat, fallback.lng);
     reverseGeocode(fallback.lat, fallback.lng);
     return;
   }
@@ -641,23 +867,73 @@ function requestLocation() {
     (pos) => {
       setLoading(false);
       const { latitude: lat, longitude: lng } = pos.coords;
-      state.area = { lat, lng, radius: SEARCH_RADIUS_M };
-      initMap(lat, lng);
+      state.area = { lat, lng, radius: state.radius };
+      initGoogleMap(lat, lng);
       reverseGeocode(lat, lng);
     },
-    (err) => {
+    () => {
       setLoading(false);
-      showLocateError(`定位失敗（${err.message}）— 改用台北 101 為預設，可點地圖選位置`);
-      state.area = { ...fallback, radius: SEARCH_RADIUS_M };
-      initMap(fallback.lat, fallback.lng);
+      showLocateError('定位失敗——改用台北 101 為預設，可點地圖或搜尋位置');
+      state.area = { ...fallback, radius: state.radius };
+      initGoogleMap(fallback.lat, fallback.lng);
       reverseGeocode(fallback.lat, fallback.lng);
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
 }
 
+// ── Radius slider + presets + open-now toggle ─────────────────
+function setRadius(meters) {
+  state.radius = meters;
+  document.getElementById('radius-slider').value = String(meters);
+  document.getElementById('radius-value').textContent = meters >= 1000 ? `${(meters/1000).toFixed(1)} km` : `${meters} m`;
+  // Sync preset buttons
+  document.querySelectorAll('.preset-btn').forEach((b) => {
+    b.classList.toggle('active', Number(b.dataset.radius) === meters);
+  });
+  if (gcircle) {
+    gcircle.setRadius(meters);
+    fitCircleToView();
+  }
+  if (state.area) state.area.radius = meters;
+}
+
+document.getElementById('radius-slider').addEventListener('input', (e) => {
+  setRadius(Number(e.target.value));
+});
+document.querySelectorAll('.preset-btn').forEach((b) => {
+  b.addEventListener('click', () => setRadius(Number(b.dataset.radius)));
+});
+
+document.getElementById('open-now-toggle').addEventListener('click', (e) => {
+  state.openNowOnly = !state.openNowOnly;
+  e.currentTarget.classList.toggle('on', state.openNowOnly);
+  e.currentTarget.setAttribute('aria-pressed', String(state.openNowOnly));
+});
+
+document.getElementById('gps-btn').addEventListener('click', () => {
+  if (!('geolocation' in navigator)) return;
+  setLoading(true, '取得位置中…');
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      setLoading(false);
+      const { latitude: lat, longitude: lng } = pos.coords;
+      if (gmap) {
+        gmap.panTo({ lat, lng });
+        gmap.setZoom(15);
+        gmarker.setPosition({ lat, lng });
+        gcircle.setCenter({ lat, lng });
+      }
+      state.area = { lat, lng, radius: state.radius };
+      reverseGeocode(lat, lng);
+    },
+    () => { setLoading(false); alert('無法取得目前位置'); },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
 // ────────────────────────────────────────────────────────────────────
-// Step 1 → Step 2: detect cuisines via Google Places API (New)
+// Places (New) API
 // ────────────────────────────────────────────────────────────────────
 async function fetchNearby(lat, lng, radius, googleType, fieldMask, maxResults) {
   const body = {
@@ -684,11 +960,14 @@ async function fetchNearby(lat, lng, radius, googleType, fieldMask, maxResults) 
   return data.places || [];
 }
 
-async function detectCuisinesInArea(lat, lng, radius) {
+async function detectCuisinesInArea(lat, lng, radius, openNowOnly) {
   const probes = await Promise.allSettled(
     DISH_CATEGORIES.map(async (category) => {
-      const places = await fetchNearby(lat, lng, radius, category.googleType, PLACES_DETECT_MASK, 5);
-      return { category, restaurantCount: places.length };
+      const places = await fetchNearby(lat, lng, radius, category.googleType, PLACES_DETECT_MASK, 10);
+      const eligible = openNowOnly
+        ? places.filter((p) => p.currentOpeningHours?.openNow === true)
+        : places;
+      return { category, restaurantCount: eligible.length };
     })
   );
   return probes
@@ -699,12 +978,12 @@ async function detectCuisinesInArea(lat, lng, radius) {
 
 document.getElementById('confirm-btn').addEventListener('click', async () => {
   if (!state.area) return;
-  setLoading(true, '偵測附近菜系…');
+  setLoading(true, state.openNowOnly ? '偵測營業中的菜系…' : '偵測附近菜系…');
   try {
-    const detected = await detectCuisinesInArea(state.area.lat, state.area.lng, SEARCH_RADIUS_M);
+    const detected = await detectCuisinesInArea(state.area.lat, state.area.lng, state.radius, state.openNowOnly);
     state.detectedCuisines = detected.slice(0, MAX_WHEEL_SLICES);
     if (state.detectedCuisines.length < MIN_WHEEL_SLICES) {
-      alert(`這個範圍內只偵測到 ${state.detectedCuisines.length} 種菜系，至少需要 ${MIN_WHEEL_SLICES} 種才能轉。試試移動範圍。`);
+      alert(`這個範圍內只偵測到 ${state.detectedCuisines.length} 種菜系（${state.openNowOnly ? '只看營業中' : '全部'}）。試試放大範圍或關掉「只看營業中」。`);
       return;
     }
     state.selectedCuisine = null;
@@ -717,14 +996,64 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
-// Step 2: wheel render + spin
+// Step 2: context chips + cuisine direct-pick + wheel
 // ────────────────────────────────────────────────────────────────────
 let currentRotation = 0;
 
 function onMountWheel() {
   document.getElementById('cuisine-count').textContent = state.detectedCuisines.length;
+  renderContextChipsWheel();
+  renderCuisineChips();
   renderWheel();
   resetReveal();
+}
+
+function renderContextChipsWheel() {
+  const wrap = document.getElementById('context-chips-wheel');
+  wrap.innerHTML = CONTEXT_TAGS.map((t) => `
+    <button class="chip context ${state.selectedContexts.has(t.id) ? 'active' : ''}" data-tag-id="${t.id}">
+      <span class="emoji">${t.emoji}</span><span>${t.labelZh}</span>
+    </button>
+  `).join('');
+  wrap.querySelectorAll('.chip').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-tag-id');
+      if (state.selectedContexts.has(id)) state.selectedContexts.delete(id);
+      else state.selectedContexts.add(id);
+      el.classList.toggle('active');
+    });
+  });
+}
+
+function renderCuisineChips() {
+  const wrap = document.getElementById('cuisine-chips');
+  wrap.innerHTML = state.detectedCuisines.map((c) => `
+    <button class="chip cuisine" data-cuisine-id="${c.category.id}">
+      <span class="emoji">${c.category.emoji}</span>
+      <span>${c.category.labelZh}</span>
+      <span class="count">${c.restaurantCount}+</span>
+    </button>
+  `).join('');
+  wrap.querySelectorAll('.chip').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-cuisine-id');
+      const found = state.detectedCuisines.find((c) => c.category.id === id);
+      if (!found) return;
+      // Skip the wheel, go straight to restaurant list
+      state.selectedCuisine = found.category;
+      // Highlight then navigate
+      wrap.querySelectorAll('.chip').forEach((x) => x.classList.remove('active'));
+      el.classList.add('active');
+      console.log('[wheel] direct-pick cuisine', {
+        ts: Date.now(),
+        area: state.area?.address ?? null,
+        cuisine: found.category.id,
+        contexts: [...state.selectedContexts],
+        userAction: 'cuisine_direct_pick',
+      });
+      navigate('list');
+    });
+  });
 }
 
 function renderWheel() {
@@ -737,8 +1066,6 @@ function renderWheel() {
   if (n === 0) return;
   const sliceAngle = 360 / n;
 
-  // 1. Wedge fill via conic-gradient — robust on iOS Safari 12.2+, no skew hacks.
-  //    `from -X` shifts so slice 0's CENTRE is at 12 o'clock (matches pointer).
   const offset = sliceAngle / 2;
   const stops = state.detectedCuisines.map((c, i) => {
     const colour = SLICE_COLOURS[i % SLICE_COLOURS.length];
@@ -748,24 +1075,19 @@ function renderWheel() {
   }).join(', ');
   wheel.style.background = `conic-gradient(from -${offset.toFixed(3)}deg, ${stops})`;
 
-  // 2. Labels: rotate around centre to each slice's centre, push outward along
-  //    the radial axis. Label text stays oriented along the radius (so users
-  //    read by tilting head slightly — same visual feel as RN wheel.tsx).
   state.detectedCuisines.forEach((c, i) => {
-    const sliceCentre = i * sliceAngle + offset; // measured from 12 o'clock, CW
-    // Rotate to slice centre, then translate up along that radial direction
-    // (translateY -radius*ratio in the rotated frame = outward).
+    const sliceCentre = i * sliceAngle + offset;
     const label = document.createElement('div');
     label.className = 'slice-label';
     label.innerHTML = `<span class="emoji">${c.category.emoji}</span>${c.category.labelZh}`;
-    label.style.transform = `translate(-50%, -50%) rotate(${sliceCentre}deg) translateY(-105px)`;
+    label.style.transform = `translate(-50%, -50%) rotate(${sliceCentre}deg) translateY(-100px)`;
     wheel.appendChild(label);
   });
 }
 
 function resetReveal() {
   const area = document.getElementById('reveal-area');
-  area.innerHTML = '<button class="primary-cta" id="spin-btn">🎯 轉！</button>';
+  area.innerHTML = '<button class="primary-cta" id="spin-btn">🎯 交給命運</button>';
   document.getElementById('spin-btn').addEventListener('click', spin);
 }
 
@@ -782,7 +1104,6 @@ function spin() {
   const wheel = document.getElementById('wheel');
   wheel.style.transform = `rotate(${finalRot}deg)`;
 
-  // Hide spin button, show spinning hint
   const area = document.getElementById('reveal-area');
   area.innerHTML = '<div class="spinning-hint">轉動中…</div>';
 
@@ -790,12 +1111,12 @@ function spin() {
     const winner = state.detectedCuisines[targetIdx];
     state.selectedCuisine = winner.category;
     renderWinnerCard(winner);
-    // Future-algo seed (T-028 §4.3) — client-side only.
     console.log('[wheel] cuisine spin', {
       ts: Date.now(),
       area: state.area?.address ?? null,
       cuisine: winner.category.id,
       restaurantCount: winner.restaurantCount,
+      contexts: [...state.selectedContexts],
       userAction: 'cuisine_spin',
     });
   }, SPIN_DURATION_MS + 50);
@@ -823,33 +1144,28 @@ function renderWinnerCard(winner) {
     renderWheel();
     resetReveal();
   });
-  document.getElementById('enter-list-btn').addEventListener('click', () => {
-    navigate('list');
-  });
+  document.getElementById('enter-list-btn').addEventListener('click', () => navigate('list'));
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Step 3: restaurant list + 情境 chips
+// Step 3: restaurant list
 // ────────────────────────────────────────────────────────────────────
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const toRad = (d) => d * Math.PI / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** algo_v1 ranker — port of lib/algo.ts.
- *  Composite score = 0.5*ratingScore + 0.3*distanceScore + 0.2*reviewScore */
 function rankPlaces(places, maxMetres) {
   return places.map((p) => {
     const ratingScore = p.rating !== undefined ? Math.max(0, Math.min(1, (p.rating - 2) / 3)) : 0.5;
     const distanceScore = p.distance !== undefined ? Math.max(0, 1 - (p.distance / maxMetres)) : 0.5;
     const reviewScore = p.userRatingCount !== undefined ? Math.min(1, Math.log10(p.userRatingCount + 1) / 3) : 0.3;
     const score = 0.5 * ratingScore + 0.3 * distanceScore + 0.2 * reviewScore;
-    return { ...p, score, scoreBreakdown: { rating: ratingScore, distance: distanceScore, reviewCount: reviewScore } };
+    return { ...p, score };
   }).sort((a, b) => b.score - a.score);
 }
 
@@ -862,7 +1178,6 @@ function shuffle(arr) {
   return a;
 }
 
-/** convergeWheel port — random 3-5 finalists then rank. */
 function convergeWheel(pool, maxMetres) {
   const ratable = pool.filter((p) => p.rating !== undefined);
   const usable = ratable.length > 0 ? ratable : pool;
@@ -876,24 +1191,26 @@ function buildPhotoUrl(photoName, maxWidthPx = 800) {
 }
 
 async function onMountList() {
-  initContextChips();
   if (!state.selectedCuisine || !state.area) return;
 
   const title = document.getElementById('list-title');
   title.textContent = `${state.selectedCuisine.emoji} ${state.selectedCuisine.labelZh}`;
 
   const subtitle = document.getElementById('list-subtitle');
-  subtitle.textContent = `📍 ${document.getElementById('address').textContent}　·　Top 推薦`;
+  const ctxLabels = [...state.selectedContexts].map((id) => CONTEXT_TAGS.find((t) => t.id === id)?.labelZh).filter(Boolean);
+  const ctxText = ctxLabels.length ? `　·　${ctxLabels.join('／')}` : '';
+  const openText = state.openNowOnly ? '　·　只看營業中' : '';
+  subtitle.textContent = `📍 ${state.area.address || '附近'}${openText}${ctxText}`;
 
   const list = document.getElementById('restaurant-list');
-  list.innerHTML = '<div class="center-state"><div class="spinner"></div><div class="msg">搜尋附近的' + state.selectedCuisine.labelZh + '…</div></div>';
+  list.innerHTML = `<div class="center-state"><div class="spinner"></div><div class="msg">搜尋附近的${state.selectedCuisine.labelZh}…</div></div>`;
 
   try {
     const places = await fetchNearby(
-      state.area.lat, state.area.lng, SEARCH_RADIUS_M,
+      state.area.lat, state.area.lng, state.radius,
       state.selectedCuisine.googleType, PLACES_SEARCH_MASK, 20
     );
-    const withDistance = places.map((p) => ({
+    let withDistance = places.map((p) => ({
       placeId: p.id,
       name: p.displayName?.text || '',
       address: p.shortFormattedAddress || p.formattedAddress || '',
@@ -907,17 +1224,21 @@ async function onMountList() {
       distance: haversine(state.area.lat, state.area.lng, p.location?.latitude || 0, p.location?.longitude || 0),
     })).sort((a, b) => a.distance - b.distance);
 
-    state.rankedRestaurants = convergeWheel(withDistance, SEARCH_RADIUS_M);
+    if (state.openNowOnly) {
+      withDistance = withDistance.filter((p) => p.openNow === true);
+    }
+
+    state.rankedRestaurants = convergeWheel(withDistance, state.radius);
     renderRestaurantList();
   } catch (err) {
-    list.innerHTML = `<div class="center-state"><div class="emoji">😵</div><div class="msg">${err.message}</div><div class="hint">試試再轉一次</div></div>`;
+    list.innerHTML = `<div class="center-state"><div class="emoji">😵</div><div class="msg">${err.message}</div><div class="hint">試試再選一次</div></div>`;
   }
 }
 
 function renderRestaurantList() {
   const list = document.getElementById('restaurant-list');
   if (state.rankedRestaurants.length === 0) {
-    list.innerHTML = `<div class="center-state"><div class="emoji">🍽️</div><div class="msg">這個範圍內沒有${state.selectedCuisine.labelZh}餐廳</div><div class="hint">試試再轉一次菜系</div></div>`;
+    list.innerHTML = `<div class="center-state"><div class="emoji">🍽️</div><div class="msg">這個範圍${state.openNowOnly ? '營業中' : ''}沒有${state.selectedCuisine.labelZh}餐廳</div><div class="hint">試試放大範圍或關掉「只看營業中」</div></div>`;
     return;
   }
   list.innerHTML = state.rankedRestaurants.map((p, i) => {
@@ -947,11 +1268,10 @@ function renderRestaurantList() {
         ts: Date.now(),
         area: state.area?.address ?? null,
         cuisine: state.selectedCuisine.id,
-        contextTag: state.selectedContext?.id ?? null,
+        contexts: [...state.selectedContexts],
         finalPlaceId: p.placeId,
         userAction: 'pick',
       });
-      // Open Google Maps in new tab for navigation
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}&query_place_id=${p.placeId}`, '_blank');
     });
   });
@@ -961,49 +1281,15 @@ function escapeHTML(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
 
-// ── 情境 chip filter (T-028, v1 純記錄不過濾) ─────────────────────
-function initContextChips() {
-  const wrap = document.getElementById('context-chips');
-  if (wrap.dataset.inited === '1') {
-    syncContextChips();
-    return;
-  }
-  wrap.dataset.inited = '1';
-  wrap.innerHTML = CONTEXT_TAGS.map((t) => `
-    <div class="chip" data-tag-id="${t.id}">
-      <span class="emoji">${t.emoji}</span>
-      <span>${t.labelZh}</span>
-    </div>
-  `).join('');
-  wrap.querySelectorAll('.chip').forEach((el) => {
-    el.addEventListener('click', () => {
-      const id = el.getAttribute('data-tag-id');
-      const tag = CONTEXT_TAGS.find((t) => t.id === id);
-      state.selectedContext = state.selectedContext?.id === id ? null : tag;
-      syncContextChips();
-    });
-  });
-}
-
-function syncContextChips() {
-  document.querySelectorAll('#context-chips .chip').forEach((el) => {
-    el.classList.toggle('active', state.selectedContext?.id === el.getAttribute('data-tag-id'));
-  });
-}
-
-// ────────────────────────────────────────────────────────────────────
-// Step 3 → re-spin back to wheel
-// ────────────────────────────────────────────────────────────────────
-document.getElementById('list-respin-btn').addEventListener('click', () => {
-  navigateBack();
-});
+document.getElementById('list-respin-btn').addEventListener('click', navigateBack);
 
 // ────────────────────────────────────────────────────────────────────
 // Boot
 // ────────────────────────────────────────────────────────────────────
-(async function init() {
+(async function boot() {
   await ensureKey();
-  requestLocation();
+  setRadius(state.radius);
+  await requestLocation();
 })();
 </script>
 </body>
