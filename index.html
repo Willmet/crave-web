@@ -7,33 +7,58 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#FF6B35" />
 <title>Crave 食遇</title>
-<link rel="icon" href="icon.png" />
-<link rel="apple-touch-icon" href="icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="256x256" href="favicon-256.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
   :root {
+    /* Brand */
     --brand: #FF6B35;
-    --brand-glow: rgba(255,107,53,0.32);
-    --cream: #FFF5EC;
-    --grey-light: #F3F4F6;
-    --grey-mid: #9CA3AF;
-    --grey-dark: #111827;
+    --brand-glow: rgba(255,107,53,0.28);
+    /* Steep-inspired warm canvas */
+    --canvas: #FFFFFF;
+    --warm-mist: #FBE1D1;        /* Steep token, aligns with Crave's warm tone */
+    --cream: #FFF5EC;            /* legacy alias for existing markup */
+    --fog: #F7F7F8;              /* secondary surface */
+    --ink: #17191C;              /* primary text (Steep ink) */
+    --muted-stone: #4C4C4C;      /* secondary text */
+    --light-steel: #777B86;      /* muted */
+    --hint-grey: #A3A6AF;        /* placeholder */
+    /* Legacy aliases (mapped to Steep palette) */
+    --grey-light: var(--fog);
+    --grey-mid: var(--light-steel);
+    --grey-dark: var(--ink);
+    /* Wheel slice colors (warm spectrum) */
     --slice-1: #FF6B35;
     --slice-2: #FFB347;
     --slice-3: #F59E0B;
     --slice-4: #FF8C42;
     --slice-5: #FFA552;
+    /* Steep shape & elevation tokens */
+    --radius-card: 24px;         /* Steep card radius */
+    --radius-img: 12px;
+    --radius-input: 16px;
+    --radius-pill: 999px;        /* Steep pill button */
+    --shadow-subtle: rgba(4,23,43,0.05) 0px 0px 0px 1px, rgba(0,0,0,0.08) 0px 12px 24px -6px;
+    --shadow-elev: rgba(4,23,43,0.05) 0px 0px 0px 1px, rgba(0,0,0,0.1) 0px 20px 25px -5px;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; height: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-    color: var(--grey-dark);
-    background: #fff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    color: var(--ink);
+    background: var(--canvas);
     overflow: hidden;
+    letter-spacing: -0.009em;       /* Steep tightening */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   #app {
     position: fixed; inset: 0;
@@ -55,7 +80,7 @@
   }
   header.brand img { width: 32px; height: 32px; }
   header.brand .brand-text { display: flex; flex-direction: column; }
-  header.brand h1 { margin: 0; font-size: 22px; font-weight: 800; color: var(--brand); letter-spacing: 0.5px; }
+  header.brand h1 { margin: 0; font-size: 22px; font-weight: 800; color: var(--brand); letter-spacing: -0.015em; }
   header.brand .tagline { margin: 1px 0 0; font-size: 11px; color: var(--grey-mid); }
 
   /* ── Sub-page header bar ───────────────────────────────────────── */
@@ -89,13 +114,13 @@
   .err-text { font-size: 12px; color: #EF4444; margin: 0 0 8px 24px; }
 
   .primary-cta {
-    appearance: none; width: 100%; padding: 15px 0;
+    appearance: none; width: 100%; padding: 16px 0;
     background: var(--brand); color: #fff;
-    border: none; border-radius: 28px;
-    font-size: 16px; font-weight: 800;
-    box-shadow: 0 4px 10px var(--brand-glow);
+    border: none; border-radius: var(--radius-pill);
+    font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+    box-shadow: var(--shadow-elev), 0 8px 18px var(--brand-glow);
     cursor: pointer;
-    transition: transform 0.1s, opacity 0.1s;
+    transition: transform 0.1s, opacity 0.1s, box-shadow 0.2s;
   }
   .primary-cta:active { transform: scale(0.98); opacity: 0.92; }
   .primary-cta:disabled { background: var(--grey-light); color: var(--grey-mid); box-shadow: none; }
@@ -161,10 +186,11 @@
     min-height: 130px;
   }
   .winner-card {
-    background: var(--cream);
-    border: 1px solid var(--brand);
-    border-radius: 16px;
-    padding: 16px;
+    background: var(--warm-mist);
+    border: none;
+    border-radius: var(--radius-card);
+    padding: 20px;
+    box-shadow: var(--shadow-subtle);
   }
   .winner-label { font-size: 12px; font-weight: 700; color: var(--brand); margin-bottom: 10px; }
   .winner-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -178,16 +204,17 @@
   .winner-meta { font-size: 13px; color: var(--grey-mid); }
   .winner-btn-row { display: flex; gap: 10px; }
   .secondary-btn {
-    appearance: none; flex: 1; padding: 12px 0;
+    appearance: none; flex: 1; padding: 13px 0;
     background: #fff; color: var(--brand);
-    border: 1.5px solid var(--brand); border-radius: 24px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
+    border: 1.5px solid var(--brand); border-radius: var(--radius-pill);
+    font-size: 14px; font-weight: 700; letter-spacing: -0.01em; cursor: pointer;
   }
   .primary-btn {
-    appearance: none; flex: 1.4; padding: 12px 0;
+    appearance: none; flex: 1.4; padding: 13px 0;
     background: var(--brand); color: #fff;
-    border: none; border-radius: 24px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
+    border: none; border-radius: var(--radius-pill);
+    font-size: 14px; font-weight: 700; letter-spacing: -0.01em; cursor: pointer;
+    box-shadow: 0 6px 14px var(--brand-glow);
   }
   .primary-btn:active, .secondary-btn:active { opacity: 0.85; }
 
@@ -201,15 +228,16 @@
   }
   .chip {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 6px 12px;
-    border-radius: 16px;
-    background: var(--grey-light);
-    color: var(--grey-dark);
-    font-size: 12px; font-weight: 600;
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    background: var(--fog);
+    color: var(--ink);
+    font-size: 12px; font-weight: 600; letter-spacing: -0.005em;
     cursor: pointer;
     user-select: none;
+    transition: background 0.15s, color 0.15s;
   }
-  .chip.active { background: var(--brand); color: #fff; }
+  .chip.active { background: var(--brand); color: #fff; box-shadow: 0 4px 10px var(--brand-glow); }
   .chip .emoji { font-size: 13px; }
 
   .restaurant-list {
@@ -219,11 +247,14 @@
   }
   .card {
     display: flex; gap: 0;
-    background: #fff; border: 1px solid var(--grey-light);
-    border-radius: 14px; margin-bottom: 12px;
+    background: #fff; border: none;
+    border-radius: var(--radius-card); margin-bottom: 14px;
     overflow: hidden; position: relative;
     cursor: pointer;
+    box-shadow: var(--shadow-subtle);
+    transition: transform 0.15s, box-shadow 0.2s;
   }
+  .card:hover { box-shadow: var(--shadow-elev); }
   .card:active { opacity: 0.75; }
   .card .rank {
     position: absolute; top: 8px; left: 8px;
@@ -253,10 +284,11 @@
     border-top: 1px solid var(--grey-light);
   }
   .respin-cta {
-    appearance: none; width: 100%; padding: 14px 0;
+    appearance: none; width: 100%; padding: 15px 0;
     background: #fff; color: var(--brand);
-    border: 1.5px solid var(--brand); border-radius: 28px;
-    font-size: 15px; font-weight: 800; cursor: pointer;
+    border: 1.5px solid var(--brand); border-radius: var(--radius-pill);
+    font-size: 15px; font-weight: 700; letter-spacing: -0.01em; cursor: pointer;
+    box-shadow: var(--shadow-subtle);
   }
   .respin-cta:active { opacity: 0.75; }
 
@@ -299,17 +331,21 @@
   }
   .modal-mask[hidden] { display: none !important; }
   .modal-card {
-    background: #fff; border-radius: 18px; padding: 24px;
+    background: #fff; border-radius: var(--radius-card); padding: 28px;
     max-width: 380px; width: 100%;
+    box-shadow: var(--shadow-elev);
   }
   .modal-card h3 { margin: 0 0 8px; font-size: 18px; }
   .modal-card p { margin: 0 0 16px; font-size: 13px; color: var(--grey-mid); line-height: 1.5; }
   .modal-card input {
-    width: 100%; padding: 12px 14px; font-size: 14px;
-    border: 1.5px solid var(--grey-light); border-radius: 10px;
+    width: 100%; padding: 13px 16px; font-size: 14px;
+    border: 1.5px solid var(--fog); border-radius: var(--radius-input);
     margin-bottom: 16px;
     font-family: ui-monospace, Menlo, monospace;
+    background: var(--fog);
+    transition: border-color 0.15s, background 0.15s;
   }
+  .modal-card input:focus { background: #fff; }
   .modal-card input:focus { outline: none; border-color: var(--brand); }
 </style>
 </head>
