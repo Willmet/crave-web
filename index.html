@@ -274,6 +274,37 @@
   .chip .emoji { font-size: 14px; }
   .chip .count { font-size: 11px; opacity: 0.7; margin-left: 2px; }
   .chip.cuisine.active .count { opacity: 0.9; }
+  .chip.boosted { background: var(--warm-mist); color: var(--ink); border: 1.5px solid var(--brand); }
+  .chip.penalized { opacity: 0.45; }
+  .chip .bias-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 6px;
+    border-radius: var(--radius-pill); margin-left: 4px;
+    letter-spacing: 0;
+  }
+  .chip .bias-tag.boost { background: var(--brand); color: #fff; }
+  .chip .bias-tag.penalty { background: var(--hint-grey); color: #fff; }
+
+  /* Restaurant card + review block */
+  .card-wrap { margin-bottom: 14px; }
+  .card-wrap .card { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .card-wrap:has(.review-block) .card { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .review-block {
+    background: #fff;
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
+    padding: 12px 16px 14px;
+    margin-top: -1px;
+    box-shadow: var(--shadow-subtle);
+    border-top: 1px solid var(--fog);
+  }
+  .review-head { font-size: 12px; font-weight: 700; color: var(--muted-stone); margin-bottom: 8px; }
+  .review-loading, .review-empty { font-size: 12px; color: var(--hint-grey); padding: 4px 0; }
+  .review-item { padding: 8px 0; border-top: 1px dashed var(--fog); }
+  .review-item:first-of-type { border-top: none; padding-top: 4px; }
+  .review-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+  .review-stars { color: #F59E0B; font-size: 11px; letter-spacing: -1px; }
+  .review-author { color: var(--ink); font-weight: 600; }
+  .review-time { color: var(--hint-grey); margin-left: auto; }
+  .review-text { font-size: 12px; color: var(--muted-stone); line-height: 1.5; }
 
   .wheel-area {
     display: flex; align-items: center; justify-content: center;
@@ -652,6 +683,30 @@ const CONTEXT_TAGS = [
   { id: 'celebration',   labelZh: '慶祝場',   emoji: '🎉' },
 ];
 
+// 情境 → 菜系權重偏好（影響轉盤抽中機率 + 餐廳排序）
+// boost: 該情境下更想吃 ／ penalty: 該情境下較不適合
+const CONTEXT_BIAS = {
+  budget_saver:  { boost: ['fast_food','chinese_noodle','brunch','taiwanese','cafe'],          penalty: ['yakiniku','sushi','italian'] },
+  group_dining:  { boost: ['hot_pot','yakiniku','izakaya','korean','cantonese','chinese'],     penalty: ['fast_food','cafe'] },
+  solo_friendly: { boost: ['ramen','japanese_curry','tonkatsu','fast_food','cafe','dessert'],  penalty: ['hot_pot','yakiniku','izakaya'] },
+  quick_bite:    { boost: ['fast_food','ramen','chinese_noodle','tonkatsu','japanese_curry'],  penalty: ['izakaya','hot_pot','yakiniku','italian'] },
+  chat_worthy:   { boost: ['cafe','brunch','italian','dessert','izakaya'],                     penalty: ['fast_food','ramen','chinese_noodle'] },
+  date_night:    { boost: ['italian','sushi','cafe','izakaya','japanese','dessert'],           penalty: ['fast_food','chinese_noodle'] },
+  family:        { boost: ['taiwanese','chinese','cantonese','hot_pot','japanese','brunch'],   penalty: ['fast_food','yakiniku','izakaya'] },
+  celebration:   { boost: ['yakiniku','sushi','italian','izakaya','japanese','hot_pot'],       penalty: ['fast_food','chinese_noodle','cafe'] },
+};
+
+function computeContextWeight(cuisineId, selectedContextIds) {
+  let weight = 1.0;
+  for (const ctxId of selectedContextIds) {
+    const bias = CONTEXT_BIAS[ctxId];
+    if (!bias) continue;
+    if (bias.boost.includes(cuisineId)) weight += 0.6;
+    if (bias.penalty.includes(cuisineId)) weight -= 0.4;
+  }
+  return Math.max(0.1, weight); // floor 0.1 so penalty never fully removes
+}
+
 const PLACES_BASE = 'https://places.googleapis.com/v1';
 const PLACES_DETECT_MASK = 'places.id,places.primaryType,places.currentOpeningHours.openNow';
 const PLACES_SEARCH_MASK = [
@@ -998,17 +1053,68 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
     const detected = await detectCuisinesInArea(state.area.lat, state.area.lng, state.radius, state.openNowOnly);
     state.detectedCuisines = detected.slice(0, MAX_WHEEL_SLICES);
     if (state.detectedCuisines.length < MIN_WHEEL_SLICES) {
-      alert(`這個範圍內只偵測到 ${state.detectedCuisines.length} 種菜系（${state.openNowOnly ? '只看營業中' : '全部'}）。試試放大範圍或關掉「只看營業中」。`);
+      // Run an unfiltered probe to distinguish "no restaurants at all" vs "all closed"
+      let totalOpen = state.detectedCuisines.reduce((s,c) => s+c.restaurantCount, 0);
+      let unfilteredCount = totalOpen;
+      if (state.openNowOnly) {
+        try {
+          const all = await detectCuisinesInArea(state.area.lat, state.area.lng, state.radius, false);
+          unfilteredCount = all.reduce((s,c) => s+c.restaurantCount, 0);
+        } catch {}
+      }
+      showActionPrompt({
+        title: state.openNowOnly && unfilteredCount > 0 ? '這個時間附近都休息' : '這個範圍餐廳太少',
+        body: state.openNowOnly && unfilteredCount > 0
+          ? `偵測到 ${unfilteredCount}+ 家餐廳，但「只看營業中」過濾後只剩 ${totalOpen} 家。要看全部嗎？`
+          : `這個範圍內只偵測到 ${totalOpen} 家餐廳，至少要 2 種菜系才能轉。建議放大搜尋範圍。`,
+        actions: [
+          ...(state.openNowOnly && unfilteredCount > 0 ? [{ label: '關掉「只看營業中」再試', primary: true, action: async () => {
+            state.openNowOnly = false;
+            const tg = document.getElementById('open-now-toggle');
+            tg.classList.remove('on'); tg.setAttribute('aria-pressed', 'false');
+            document.getElementById('confirm-btn').click();
+          } }] : []),
+          { label: '放大範圍', action: () => setRadius(Math.min(10000, state.radius + 1000)) },
+          { label: '取消', action: () => {} },
+        ],
+      });
       return;
     }
     state.selectedCuisine = null;
     navigate('wheel');
   } catch (err) {
-    alert(`偵測失敗：${err.message}`);
+    showActionPrompt({
+      title: '偵測失敗',
+      body: err.message || '未知錯誤',
+      actions: [{ label: '知道了', primary: true, action: () => {} }],
+    });
   } finally {
     setLoading(false);
   }
 });
+
+// Generic in-app prompt (replaces window.alert for better UX)
+function showActionPrompt({ title, body, actions }) {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.innerHTML = `
+    <div class="modal-card">
+      <h3>${escapeHTML(title)}</h3>
+      <p style="margin-bottom:20px;">${escapeHTML(body)}</p>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${actions.map((a, i) => `<button class="${a.primary ? 'primary-cta' : 'secondary-btn'}" data-idx="${i}">${escapeHTML(a.label)}</button>`).join('')}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+  mask.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.getAttribute('data-idx'));
+      mask.remove();
+      actions[idx]?.action?.();
+    });
+  });
+}
 
 // ────────────────────────────────────────────────────────────────────
 // Step 2: context chips + cuisine direct-pick + wheel
@@ -1036,27 +1142,36 @@ function renderContextChipsWheel() {
       if (state.selectedContexts.has(id)) state.selectedContexts.delete(id);
       else state.selectedContexts.add(id);
       el.classList.toggle('active');
+      // Re-render cuisines + wheel so highlights / weights refresh
+      renderCuisineChips();
+      renderWheel();
     });
   });
 }
 
 function renderCuisineChips() {
   const wrap = document.getElementById('cuisine-chips');
-  wrap.innerHTML = state.detectedCuisines.map((c) => `
-    <button class="chip cuisine" data-cuisine-id="${c.category.id}">
-      <span class="emoji">${c.category.emoji}</span>
-      <span>${c.category.labelZh}</span>
-      <span class="count">${c.restaurantCount}+</span>
-    </button>
-  `).join('');
+  const ctxIds = [...state.selectedContexts];
+  wrap.innerHTML = state.detectedCuisines.map((c) => {
+    const w = computeContextWeight(c.category.id, ctxIds);
+    const boosted = ctxIds.length > 0 && w > 1.0;
+    const penalized = ctxIds.length > 0 && w < 1.0;
+    const tag = boosted ? '<span class="bias-tag boost">✨ 推薦</span>' : penalized ? '<span class="bias-tag penalty">不建議</span>' : '';
+    return `
+      <button class="chip cuisine ${boosted ? 'boosted' : ''} ${penalized ? 'penalized' : ''}" data-cuisine-id="${c.category.id}">
+        <span class="emoji">${c.category.emoji}</span>
+        <span>${c.category.labelZh}</span>
+        <span class="count">${c.restaurantCount}+</span>
+        ${tag}
+      </button>
+    `;
+  }).join('');
   wrap.querySelectorAll('.chip').forEach((el) => {
     el.addEventListener('click', () => {
       const id = el.getAttribute('data-cuisine-id');
       const found = state.detectedCuisines.find((c) => c.category.id === id);
       if (!found) return;
-      // Skip the wheel, go straight to restaurant list
       state.selectedCuisine = found.category;
-      // Highlight then navigate
       wrap.querySelectorAll('.chip').forEach((x) => x.classList.remove('active'));
       el.classList.add('active');
       console.log('[wheel] direct-pick cuisine', {
@@ -1090,11 +1205,14 @@ function renderWheel() {
   }).join(', ');
   wheel.style.background = `conic-gradient(from -${offset.toFixed(3)}deg, ${stops})`;
 
+  const ctxIds = [...state.selectedContexts];
   state.detectedCuisines.forEach((c, i) => {
     const sliceCentre = i * sliceAngle + offset;
+    const w = computeContextWeight(c.category.id, ctxIds);
+    const mark = ctxIds.length > 0 && w > 1.0 ? '✨' : '';
     const label = document.createElement('div');
     label.className = 'slice-label';
-    label.innerHTML = `<span class="emoji">${c.category.emoji}</span>${c.category.labelZh}`;
+    label.innerHTML = `<span class="emoji">${c.category.emoji}</span>${mark}${c.category.labelZh}`;
     label.style.transform = `translate(-50%, -50%) rotate(${sliceCentre}deg) translateY(-100px)`;
     wheel.appendChild(label);
   });
@@ -1106,11 +1224,25 @@ function resetReveal() {
   document.getElementById('spin-btn').addEventListener('click', spin);
 }
 
+function weightedRandomIdx(cuisines, contextIds) {
+  const weights = cuisines.map((c) => computeContextWeight(c.category.id, contextIds));
+  const total = weights.reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return i;
+  }
+  return weights.length - 1;
+}
+
 function spin() {
   const n = state.detectedCuisines.length;
   if (n === 0) return;
   const sliceAngle = 360 / n;
-  const targetIdx = Math.floor(Math.random() * n);
+  const ctxIds = [...state.selectedContexts];
+  const targetIdx = ctxIds.length > 0
+    ? weightedRandomIdx(state.detectedCuisines, ctxIds)
+    : Math.floor(Math.random() * n);
   const targetCentre = targetIdx * sliceAngle + sliceAngle / 2;
   const desiredEnd = SPIN_TURNS * 360 + (360 - targetCentre);
   const finalRot = currentRotation + desiredEnd;
@@ -1184,25 +1316,27 @@ function rankPlaces(places, maxMetres) {
   }).sort((a, b) => b.score - a.score);
 }
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function convergeWheel(pool, maxMetres) {
-  const ratable = pool.filter((p) => p.rating !== undefined);
-  const usable = ratable.length > 0 ? ratable : pool;
-  const sliceCount = Math.min(5, Math.max(3, usable.length));
-  const finalists = shuffle(usable).slice(0, sliceCount);
-  return rankPlaces(finalists, maxMetres);
-}
-
 function buildPhotoUrl(photoName, maxWidthPx = 800) {
   return `${PLACES_BASE}/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${state.apiKey}`;
+}
+
+// Fetch 3 most recent reviews for a single place (Places API New GetPlace)
+const PLACE_DETAILS_MASK = 'reviews.rating,reviews.text,reviews.publishTime,reviews.relativePublishTimeDescription,reviews.authorAttribution';
+async function fetchPlaceReviews(placeId) {
+  const r = await fetch(`${PLACES_BASE}/places/${encodeURIComponent(placeId)}?languageCode=zh-TW`, {
+    headers: {
+      'X-Goog-Api-Key': state.apiKey,
+      'X-Goog-FieldMask': PLACE_DETAILS_MASK,
+    },
+  });
+  if (!r.ok) return [];
+  const data = await r.json();
+  const reviews = (data.reviews || []).slice().sort((a,b) => {
+    const ta = new Date(a.publishTime || 0).getTime();
+    const tb = new Date(b.publishTime || 0).getTime();
+    return tb - ta; // newest first
+  }).slice(0, 3);
+  return reviews;
 }
 
 async function onMountList() {
@@ -1237,23 +1371,59 @@ async function onMountList() {
       photos: (p.photos || []).map((ph) => buildPhotoUrl(ph.name)),
       openNow: p.currentOpeningHours?.openNow,
       distance: haversine(state.area.lat, state.area.lng, p.location?.latitude || 0, p.location?.longitude || 0),
-    })).sort((a, b) => a.distance - b.distance);
+      reviews: null, // fetched on demand for top-5
+    }));
 
     if (state.openNowOnly) {
       withDistance = withDistance.filter((p) => p.openNow === true);
     }
 
-    state.rankedRestaurants = convergeWheel(withDistance, state.radius);
+    if (withDistance.length === 0) {
+      renderRestaurantList();
+      return;
+    }
+
+    // Rank ALL detected restaurants (no longer cut to 3-5)
+    state.rankedRestaurants = rankPlaces(withDistance, state.radius);
     renderRestaurantList();
+
+    // Fetch reviews for top 5 in parallel and update cards as they arrive
+    const top5 = state.rankedRestaurants.slice(0, 5);
+    top5.forEach(async (p) => {
+      try {
+        const reviews = await fetchPlaceReviews(p.placeId);
+        p.reviews = reviews;
+        renderRestaurantReviewBlock(p.placeId, reviews);
+      } catch (e) {
+        // silent — leave the placeholder
+        p.reviews = [];
+        renderRestaurantReviewBlock(p.placeId, []);
+      }
+    });
   } catch (err) {
-    list.innerHTML = `<div class="center-state"><div class="emoji">😵</div><div class="msg">${err.message}</div><div class="hint">試試再選一次</div></div>`;
+    list.innerHTML = `<div class="center-state"><div class="emoji">😵</div><div class="msg">${escapeHTML(err.message)}</div><div class="hint">試試再選一次</div></div>`;
   }
 }
 
 function renderRestaurantList() {
   const list = document.getElementById('restaurant-list');
   if (state.rankedRestaurants.length === 0) {
-    list.innerHTML = `<div class="center-state"><div class="emoji">🍽️</div><div class="msg">這個範圍${state.openNowOnly ? '營業中' : ''}沒有${state.selectedCuisine.labelZh}餐廳</div><div class="hint">試試放大範圍或關掉「只看營業中」</div></div>`;
+    // Empty state with actionable button
+    const canToggleOpenNow = state.openNowOnly;
+    list.innerHTML = `
+      <div class="center-state">
+        <div class="emoji">🍽️</div>
+        <div class="msg">這個範圍${state.openNowOnly ? '營業中' : ''}沒有${state.selectedCuisine.labelZh}餐廳</div>
+        <div class="hint">${canToggleOpenNow ? '可以關掉「只看營業中」看全部，或返回放大範圍' : '試試返回放大搜尋範圍'}</div>
+        ${canToggleOpenNow ? '<button class="primary-cta" id="empty-toggle-open" style="margin-top:20px; max-width:240px;">關掉「只看營業中」</button>' : ''}
+      </div>
+    `;
+    document.getElementById('empty-toggle-open')?.addEventListener('click', async () => {
+      state.openNowOnly = false;
+      const tg = document.getElementById('open-now-toggle');
+      tg.classList.remove('on'); tg.setAttribute('aria-pressed', 'false');
+      await onMountList(); // refetch with new flag
+    });
     return;
   }
   list.innerHTML = state.rankedRestaurants.map((p, i) => {
@@ -1261,15 +1431,20 @@ function renderRestaurantList() {
     const openTag = p.openNow === true ? '<span class="open">營業中</span>' : p.openNow === false ? '<span class="closed">休息中</span>' : '';
     const rating = p.rating !== undefined ? `<span class="rating">⭐ ${p.rating.toFixed(1)}${p.userRatingCount !== undefined ? ` (${p.userRatingCount})` : ''}</span>` : '';
     const imgStyle = p.photos && p.photos.length > 0 ? `background-image:url('${p.photos[0]}')` : '';
+    const isTop5 = i < 5;
+    const reviewSlot = isTop5 ? `<div class="review-block" data-review-for="${p.placeId}"><div class="review-loading">📝 載入評論…</div></div>` : '';
     return `
-      <div class="card" data-place-id="${p.placeId}">
-        <div class="rank">#${i+1}</div>
-        <div class="img" style="${imgStyle}">${imgStyle ? '' : (state.selectedCuisine.emoji)}</div>
-        <div class="body">
-          <div class="name">${escapeHTML(p.name)}</div>
-          <div class="addr">${escapeHTML(p.address || '地址未提供')}</div>
-          <div class="meta">${rating}<span class="dist">📍 ${dist}</span>${openTag}</div>
+      <div class="card-wrap">
+        <div class="card" data-place-id="${p.placeId}">
+          <div class="rank">#${i+1}</div>
+          <div class="img" style="${imgStyle}">${imgStyle ? '' : (state.selectedCuisine.emoji)}</div>
+          <div class="body">
+            <div class="name">${escapeHTML(p.name)}</div>
+            <div class="addr">${escapeHTML(p.address || '地址未提供')}</div>
+            <div class="meta">${rating}<span class="dist">📍 ${dist}</span>${openTag}</div>
+          </div>
         </div>
+        ${reviewSlot}
       </div>
     `;
   }).join('');
@@ -1290,6 +1465,34 @@ function renderRestaurantList() {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}&query_place_id=${p.placeId}`, '_blank');
     });
   });
+}
+
+function renderRestaurantReviewBlock(placeId, reviews) {
+  const block = document.querySelector(`[data-review-for="${placeId}"]`);
+  if (!block) return;
+  if (!reviews || reviews.length === 0) {
+    block.innerHTML = '<div class="review-empty">沒有最新評論</div>';
+    return;
+  }
+  block.innerHTML = `
+    <div class="review-head">📝 最新 ${reviews.length} 則評論</div>
+    ${reviews.map((r) => {
+      const stars = '⭐'.repeat(Math.round(r.rating || 0));
+      const author = r.authorAttribution?.displayName || '匿名';
+      const time = r.relativePublishTimeDescription || '';
+      const text = (r.text?.text || '').slice(0, 140);
+      return `
+        <div class="review-item">
+          <div class="review-meta">
+            <span class="review-stars">${stars}</span>
+            <span class="review-author">${escapeHTML(author)}</span>
+            <span class="review-time">${escapeHTML(time)}</span>
+          </div>
+          <div class="review-text">${escapeHTML(text)}${text.length >= 140 ? '…' : ''}</div>
+        </div>
+      `;
+    }).join('')}
+  `;
 }
 
 function escapeHTML(s) {
