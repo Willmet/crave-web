@@ -236,6 +236,49 @@
   .primary-cta:active { transform: scale(0.98); opacity: 0.92; }
   .primary-cta:disabled { background: var(--fog); color: var(--hint-grey); box-shadow: none; }
 
+  /* Step 2: mode tabs (Steep pill) */
+  .mode-tabs {
+    display: flex; gap: 6px;
+    padding: 4px 16px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid var(--fog);
+  }
+  .mode-tab {
+    appearance: none; flex: 1 0 auto;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 9px 14px;
+    background: var(--fog); color: var(--muted-stone);
+    border: none; border-radius: var(--radius-pill);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    letter-spacing: -0.005em; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .mode-tab .emoji { font-size: 15px; }
+  .mode-tab.active {
+    background: var(--brand); color: #fff;
+    box-shadow: 0 2px 8px var(--brand-glow);
+  }
+
+  /* Single-category mode special-case big card */
+  .single-card-wrap { padding: 12px 20px 0; }
+  .single-card {
+    background: var(--warm-mist); border: none;
+    border-radius: var(--radius-card); padding: 24px 20px;
+    box-shadow: var(--shadow-subtle);
+    display: flex; align-items: center; gap: 16px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.2s;
+  }
+  .single-card:active { transform: scale(0.98); }
+  .single-card .big-emoji {
+    width: 64px; height: 64px; border-radius: 32px;
+    background: #fff; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 32px;
+  }
+  .single-card .sc-name { font-size: 20px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+  .single-card .sc-meta { font-size: 13px; color: var(--muted-stone); }
+
   /* Step 2: wheel */
   .wheel-scroll {
     flex: 1; min-height: 0; overflow-y: auto;
@@ -575,6 +618,9 @@
       <div class="nav-side"></div>
     </div>
 
+    <!-- 5 模式 tab（Steep pill 風） -->
+    <div class="mode-tabs" id="mode-tabs"></div>
+
     <div class="wheel-scroll">
       <!-- 情境 chips（多選） -->
       <div class="section-head">
@@ -585,22 +631,29 @@
 
       <!-- 偵測到的菜系 chips（單選跳過轉盤；不選則用整盤轉） -->
       <div class="section-head">
-        <span class="title"><span id="cuisine-count">0</span> 種菜系入圍</span>
+        <span class="title"><span id="cuisine-count">0</span> 種入圍</span>
         <span class="hint">直接點即跳餐廳；或下方按轉</span>
       </div>
       <div class="chip-wrap" id="cuisine-chips"></div>
 
-      <!-- 轉盤 -->
-      <div class="wheel-area">
-        <div class="wheel-pointer"></div>
-        <div class="wheel-outer">
-          <div class="wheel" id="wheel"></div>
-          <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+      <!-- 轉盤 / 單品類特例 容器 -->
+      <div id="wheel-stage">
+        <div class="wheel-area">
+          <div class="wheel-pointer"></div>
+          <div class="wheel-outer">
+            <div class="wheel" id="wheel"></div>
+            <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+          </div>
+        </div>
+
+        <div class="reveal-area" id="reveal-area">
+          <button class="primary-cta" id="spin-btn">🎯 交給命運</button>
         </div>
       </div>
 
-      <div class="reveal-area" id="reveal-area">
-        <button class="primary-cta" id="spin-btn">🎯 交給命運</button>
+      <!-- 探索更多正餐（只在正餐模式 tier2 未載時顯示） -->
+      <div id="main-more-wrap" style="padding:0 20px 20px;" hidden>
+        <button class="secondary-btn" id="main-more-btn" style="width:100%;">探索更多正餐 ▾</button>
       </div>
     </div>
   </section>
@@ -647,30 +700,69 @@ const SPIN_DURATION_MS = 4200;
 const SPIN_TURNS = 6;
 const SLICE_COLOURS = ['#FF6B35', '#FFB347', '#F59E0B', '#FF8C42', '#FFA552'];
 
-const DISH_CATEGORIES = [
-  { id: 'ramen',          labelZh: '拉麵',     googleType: 'ramen_restaurant',            emoji: '🍜' },
-  { id: 'sushi',          labelZh: '壽司',     googleType: 'sushi_restaurant',            emoji: '🍣' },
-  { id: 'yakiniku',       labelZh: '燒肉',     googleType: 'yakiniku_restaurant',         emoji: '🥩' },
-  { id: 'japanese_curry', labelZh: '日式咖哩', googleType: 'japanese_curry_restaurant',   emoji: '🍛' },
-  { id: 'tonkatsu',       labelZh: '日式豬排', googleType: 'tonkatsu_restaurant',         emoji: '🐖' },
-  { id: 'izakaya',        labelZh: '居酒屋',   googleType: 'japanese_izakaya_restaurant', emoji: '🍶' },
-  { id: 'japanese',       labelZh: '日式簡餐', googleType: 'japanese_restaurant',         emoji: '🍱' },
-  { id: 'hot_pot',        labelZh: '火鍋',     googleType: 'hot_pot_restaurant',          emoji: '🍲' },
-  { id: 'korean',         labelZh: '韓式',     googleType: 'korean_restaurant',           emoji: '🍖' },
-  { id: 'thai',           labelZh: '泰式',     googleType: 'thai_restaurant',             emoji: '🌶️' },
-  { id: 'vietnamese',     labelZh: '越式',     googleType: 'vietnamese_restaurant',       emoji: '🍲' },
-  { id: 'cantonese',      labelZh: '粵式',     googleType: 'cantonese_restaurant',        emoji: '🥟' },
-  { id: 'chinese_noodle', labelZh: '中式麵食', googleType: 'chinese_noodle_restaurant',   emoji: '🍜' },
-  { id: 'chinese',        labelZh: '中式',     googleType: 'chinese_restaurant',          emoji: '🥡' },
-  { id: 'taiwanese',      labelZh: '台式',     googleType: 'taiwanese_restaurant',        emoji: '🥟' },
-  { id: 'italian',        labelZh: '義式',     googleType: 'italian_restaurant',          emoji: '🍝' },
-  { id: 'pizza',          labelZh: '披薩',     googleType: 'pizza_restaurant',            emoji: '🍕' },
-  { id: 'american',       labelZh: '美式',     googleType: 'american_restaurant',         emoji: '🍔' },
-  { id: 'brunch',         labelZh: '早午餐',   googleType: 'brunch_restaurant',           emoji: '🥯' },
-  { id: 'fast_food',      labelZh: '速食',     googleType: 'fast_food_restaurant',        emoji: '🍟' },
-  { id: 'cafe',           labelZh: '咖啡',     googleType: 'cafe',                        emoji: '☕' },
-  { id: 'dessert',        labelZh: '甜點',     googleType: 'dessert_restaurant',          emoji: '🍰' },
-];
+// ── 5 模式轉盤分類（T-044 定稿 source of truth）─────────────────────
+// 每 category：probe = 偵測用單一 type（打一次 searchNearby）；types = 清單查詢整組
+// _restaurant 後綴依現有實測慣例；cafe/bakery/bar/deli 等無後綴 type 照實測有效清單
+const WHEEL_MODES = {
+  main: {
+    labelZh: '正餐', emoji: '🍱', batched: true,
+    // tier1：高頻 8 類，切到正餐預設先偵測
+    tier1: [
+      { id: 'ramen',     labelZh: '拉麵',      emoji: '🍜', probe: 'ramen_restaurant',     types: ['ramen_restaurant'] },
+      { id: 'sushi_jp',  labelZh: '壽司·日料', emoji: '🍣', probe: 'sushi_restaurant',     types: ['sushi_restaurant','japanese_restaurant','tonkatsu_restaurant','japanese_curry_restaurant'] },
+      { id: 'yakiniku',  labelZh: '燒肉·居酒屋', emoji: '🥩', probe: 'yakiniku_restaurant', types: ['yakiniku_restaurant','japanese_izakaya_restaurant'] },
+      { id: 'hotpot',    labelZh: '火鍋',      emoji: '🍲', probe: 'hot_pot_restaurant',   types: ['hot_pot_restaurant'] },
+      { id: 'korean',    labelZh: '韓式',      emoji: '🍖', probe: 'korean_restaurant',    types: ['korean_restaurant'] },
+      { id: 'taiwanese', labelZh: '台式·小吃', emoji: '🥟', probe: 'taiwanese_restaurant', types: ['taiwanese_restaurant'] },
+      { id: 'chinese',   labelZh: '中式·熱炒', emoji: '🥡', probe: 'chinese_restaurant',   types: ['chinese_restaurant','chinese_noodle_restaurant'] },
+      { id: 'seafood',   labelZh: '海鮮·熱炒', emoji: '🦐', probe: 'seafood_restaurant',   types: ['seafood_restaurant'] },
+    ],
+    // tier2：點「探索更多正餐」才偵測
+    tier2: [
+      { id: 'italian',  labelZh: '義式',      emoji: '🍝', probe: 'italian_restaurant',  types: ['italian_restaurant','pizza_restaurant'] },
+      { id: 'american', labelZh: '美式·漢堡', emoji: '🍔', probe: 'hamburger_restaurant', types: ['hamburger_restaurant','american_restaurant','bar_and_grill','diner','barbecue_restaurant'] },
+      { id: 'steak',    labelZh: '牛排·排餐', emoji: '🥩', probe: 'steak_house',         types: ['steak_house'] },
+      { id: 'hongkong', labelZh: '港式',      emoji: '🥟', probe: 'cantonese_restaurant', types: ['cantonese_restaurant'] },
+      { id: 'thai',     labelZh: '泰式',      emoji: '🌶️', probe: 'thai_restaurant',      types: ['thai_restaurant'] },
+      { id: 'vietnam',  labelZh: '越南·南洋', emoji: '🍜', probe: 'vietnamese_restaurant', types: ['vietnamese_restaurant','asian_restaurant'] },
+      { id: 'exotic',   labelZh: '異國·探索', emoji: '🌍', probe: 'indian_restaurant',    types: ['indian_restaurant','mexican_restaurant','french_restaurant','spanish_restaurant','mediterranean_restaurant'] },
+    ],
+  },
+  light: {
+    labelZh: '輕食', emoji: '🥪', batched: false,
+    categories: [
+      { id: 'brunch',   labelZh: '早午餐',     emoji: '🥯', probe: 'brunch_restaurant',   types: ['brunch_restaurant','breakfast_restaurant'] },
+      { id: 'sandwich', labelZh: '三明治·貝果', emoji: '🥪', probe: 'sandwich_shop',       types: ['sandwich_shop','bagel_shop','deli'] },
+      { id: 'fastfood', labelZh: '速食',       emoji: '🍟', probe: 'fast_food_restaurant', types: ['fast_food_restaurant'] },
+      { id: 'foodcourt', labelZh: '美食街',    emoji: '🍱', probe: 'food_court',          types: ['food_court'] },
+      { id: 'takeaway', labelZh: '外帶',       emoji: '🥡', probe: 'meal_takeaway',       types: ['meal_takeaway'] },
+      { id: 'veg',      labelZh: '蔬食',       emoji: '🥗', probe: 'vegetarian_restaurant', types: ['vegetarian_restaurant','vegan_restaurant'] },
+    ],
+  },
+  dessert: {
+    labelZh: '甜點', emoji: '🍰', batched: false,
+    categories: [
+      { id: 'cake',   labelZh: '蛋糕·甜點', emoji: '🍰', probe: 'dessert_restaurant', types: ['dessert_restaurant'] },
+      { id: 'bakery', labelZh: '麵包·烘焙', emoji: '🥐', probe: 'bakery',             types: ['bakery'] },
+      { id: 'ice',    labelZh: '冰品',     emoji: '🍦', probe: 'ice_cream_shop',     types: ['ice_cream_shop'] },
+      { id: 'donut',  labelZh: '甜甜圈',   emoji: '🍩', probe: 'donut_shop',         types: ['donut_shop'] },
+    ],
+  },
+  drink: {
+    labelZh: '飲料', emoji: '🥤', batched: false,
+    categories: [
+      { id: 'coffee', labelZh: '咖啡',       emoji: '☕', probe: 'cafe',       types: ['cafe'] },
+      { id: 'tea',    labelZh: '手搖·茶·果汁', emoji: '🧋', probe: 'tea_house', types: ['tea_house','juice_shop'] },
+    ],
+  },
+  booze: {
+    labelZh: '微醺', emoji: '🍺', batched: false,
+    categories: [
+      { id: 'bar', labelZh: '酒吧·小酌', emoji: '🍺', probe: 'bar', types: ['bar'] },
+    ],
+  },
+};
+const MODE_ORDER = ['main', 'light', 'dessert', 'drink', 'booze'];
 
 const CONTEXT_TAGS = [
   { id: 'budget_saver',  labelZh: '月底救星', emoji: '💰' },
@@ -685,15 +777,16 @@ const CONTEXT_TAGS = [
 
 // 情境 → 菜系權重偏好（影響轉盤抽中機率 + 餐廳排序）
 // boost: 該情境下更想吃 ／ penalty: 該情境下較不適合
+// 重 map 到 T-044 新正餐 id（情境加權只作用於正餐菜系）
 const CONTEXT_BIAS = {
-  budget_saver:  { boost: ['fast_food','chinese_noodle','brunch','taiwanese','cafe'],          penalty: ['yakiniku','sushi','italian'] },
-  group_dining:  { boost: ['hot_pot','yakiniku','izakaya','korean','cantonese','chinese'],     penalty: ['fast_food','cafe'] },
-  solo_friendly: { boost: ['ramen','japanese_curry','tonkatsu','fast_food','cafe','dessert'],  penalty: ['hot_pot','yakiniku','izakaya'] },
-  quick_bite:    { boost: ['fast_food','ramen','chinese_noodle','tonkatsu','japanese_curry'],  penalty: ['izakaya','hot_pot','yakiniku','italian'] },
-  chat_worthy:   { boost: ['cafe','brunch','italian','dessert','izakaya'],                     penalty: ['fast_food','ramen','chinese_noodle'] },
-  date_night:    { boost: ['italian','sushi','cafe','izakaya','japanese','dessert'],           penalty: ['fast_food','chinese_noodle'] },
-  family:        { boost: ['taiwanese','chinese','cantonese','hot_pot','japanese','brunch'],   penalty: ['fast_food','yakiniku','izakaya'] },
-  celebration:   { boost: ['yakiniku','sushi','italian','izakaya','japanese','hot_pot'],       penalty: ['fast_food','chinese_noodle','cafe'] },
+  budget_saver:  { boost: ['taiwanese','chinese'],                                  penalty: ['yakiniku','sushi_jp','italian','steak'] },
+  group_dining:  { boost: ['hotpot','yakiniku','korean','hongkong','chinese','seafood'], penalty: [] },
+  solo_friendly: { boost: ['ramen'],                                                penalty: ['hotpot','yakiniku','seafood'] },
+  quick_bite:    { boost: ['ramen','chinese'],                                      penalty: ['yakiniku','hotpot','italian','steak'] },
+  chat_worthy:   { boost: ['italian'],                                              penalty: ['ramen'] },
+  date_night:    { boost: ['italian','sushi_jp','steak'],                           penalty: ['chinese'] },
+  family:        { boost: ['taiwanese','chinese','hongkong','hotpot','seafood'],    penalty: ['yakiniku'] },
+  celebration:   { boost: ['yakiniku','sushi_jp','italian','hotpot','steak','seafood'], penalty: ['chinese'] },
 };
 
 function computeContextWeight(cuisineId, selectedContextIds) {
@@ -724,8 +817,11 @@ const state = {
   area: null,                    // { lat, lng, address, radius }
   radius: 2000,
   openNowOnly: true,
-  detectedCuisines: [],
-  selectedCuisine: null,
+  activeMode: 'main',
+  detectedCuisines: [],          // 當前 activeMode 已偵測且 count>0 的 categories（排序後）
+  detectedByMode: {},            // 各模式偵測結果快取，避免切回重打 { mode: [{category,restaurantCount}] }
+  mainSecondLoaded: false,       // 正餐 tier2 是否已偵測
+  selectedCuisine: null,         // 存 category 物件（含 types 陣列）
   restaurants: [],
   rankedRestaurants: [],
   selectedContexts: new Set(),
@@ -1007,7 +1103,7 @@ document.getElementById('gps-btn').addEventListener('click', () => {
 // ────────────────────────────────────────────────────────────────────
 async function fetchNearby(lat, lng, radius, googleType, fieldMask, maxResults) {
   const body = {
-    includedPrimaryTypes: [googleType],
+    includedPrimaryTypes: Array.isArray(googleType) ? googleType : [googleType],
     maxResultCount: maxResults,
     locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: Math.max(1, Math.min(50000, radius)) } },
     languageCode: 'zh-TW',
@@ -1030,10 +1126,12 @@ async function fetchNearby(lat, lng, radius, googleType, fieldMask, maxResults) 
   return data.places || [];
 }
 
-async function detectCuisinesInArea(lat, lng, radius, openNowOnly) {
+// 對一組 categories 各用 probe（單一 type）打一次 searchNearby（≤10 並行）
+// openNowOnly 過濾，回傳 count>0 者按數量排序
+async function detectCategories(categories, lat, lng, radius, openNowOnly) {
   const probes = await Promise.allSettled(
-    DISH_CATEGORIES.map(async (category) => {
-      const places = await fetchNearby(lat, lng, radius, category.googleType, PLACES_DETECT_MASK, 10);
+    categories.map(async (category) => {
+      const places = await fetchNearby(lat, lng, radius, category.probe, PLACES_DETECT_MASK, 10);
       const eligible = openNowOnly
         ? places.filter((p) => p.currentOpeningHours?.openNow === true)
         : places;
@@ -1046,19 +1144,45 @@ async function detectCuisinesInArea(lat, lng, radius, openNowOnly) {
     .sort((a, b) => b.restaurantCount - a.restaurantCount);
 }
 
+// 取某模式要偵測的 categories（正餐預設只 tier1；含 tier2 時合併）
+function modeCategories(mode, includeMainTier2) {
+  const m = WHEEL_MODES[mode];
+  if (m.batched) return includeMainTier2 ? [...m.tier1, ...m.tier2] : [...m.tier1];
+  return [...m.categories];
+}
+
+// 偵測某模式（含快取）→ 寫入 state.detectedByMode + state.detectedCuisines
+async function detectMode(mode, { includeMainTier2 = false } = {}) {
+  const cacheKey = mode === 'main' && includeMainTier2 ? 'main2' : mode;
+  if (state.detectedByMode[cacheKey]) {
+    state.detectedCuisines = state.detectedByMode[cacheKey];
+    return state.detectedCuisines;
+  }
+  const cats = modeCategories(mode, includeMainTier2);
+  const detected = await detectCategories(cats, state.area.lat, state.area.lng, state.radius, state.openNowOnly);
+  const sliced = detected.slice(0, MAX_WHEEL_SLICES);
+  state.detectedByMode[cacheKey] = sliced;
+  state.detectedCuisines = sliced;
+  if (mode === 'main') state.mainSecondLoaded = includeMainTier2;
+  return sliced;
+}
+
 document.getElementById('confirm-btn').addEventListener('click', async () => {
   if (!state.area) return;
   setLoading(true, state.openNowOnly ? '偵測營業中的菜系…' : '偵測附近菜系…');
   try {
-    const detected = await detectCuisinesInArea(state.area.lat, state.area.lng, state.radius, state.openNowOnly);
-    state.detectedCuisines = detected.slice(0, MAX_WHEEL_SLICES);
+    // 進 wheel 預設偵測正餐 tier1
+    state.activeMode = 'main';
+    state.mainSecondLoaded = false;
+    state.detectedByMode = {};   // 換區域 / 重新確認 → 清快取
+    await detectMode('main', { includeMainTier2: false });
     if (state.detectedCuisines.length < MIN_WHEEL_SLICES) {
-      // Run an unfiltered probe to distinguish "no restaurants at all" vs "all closed"
+      // 區別「整區沒餐廳」vs「都休息」（僅正餐 default 用此「太少」提示）
       let totalOpen = state.detectedCuisines.reduce((s,c) => s+c.restaurantCount, 0);
       let unfilteredCount = totalOpen;
       if (state.openNowOnly) {
         try {
-          const all = await detectCuisinesInArea(state.area.lat, state.area.lng, state.radius, false);
+          const all = await detectCategories(modeCategories('main', false), state.area.lat, state.area.lng, state.radius, false);
           unfilteredCount = all.reduce((s,c) => s+c.restaurantCount, 0);
         } catch {}
       }
@@ -1066,7 +1190,7 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
         title: state.openNowOnly && unfilteredCount > 0 ? '這個時間附近都休息' : '這個範圍餐廳太少',
         body: state.openNowOnly && unfilteredCount > 0
           ? `偵測到 ${unfilteredCount}+ 家餐廳，但「只看營業中」過濾後只剩 ${totalOpen} 家。要看全部嗎？`
-          : `這個範圍內只偵測到 ${totalOpen} 家餐廳，至少要 2 種菜系才能轉。建議放大搜尋範圍。`,
+          : `這個範圍內只偵測到 ${totalOpen} 家正餐餐廳，至少要 2 種才能轉。建議放大搜尋範圍。`,
         actions: [
           ...(state.openNowOnly && unfilteredCount > 0 ? [{ label: '關掉「只看營業中」再試', primary: true, action: async () => {
             state.openNowOnly = false;
@@ -1122,11 +1246,123 @@ function showActionPrompt({ title, body, actions }) {
 let currentRotation = 0;
 
 function onMountWheel() {
-  document.getElementById('cuisine-count').textContent = state.detectedCuisines.length;
+  renderModeTabs();
   renderContextChipsWheel();
-  renderCuisineChips();
-  renderWheel();
-  resetReveal();
+  renderWheelStage();
+}
+
+// 依當前 activeMode + detectedCuisines 決定畫轉盤 / 單品類特例 / 空狀態
+function renderWheelStage() {
+  document.getElementById('cuisine-count').textContent = state.detectedCuisines.length;
+  renderCuisineChips();      // chips（直選）永遠顯示
+  renderMainMoreBtn();
+
+  const stage = document.getElementById('wheel-stage');
+  const present = state.detectedCuisines.length;
+
+  if (present >= 2) {
+    // 正常：畫轉盤
+    stage.innerHTML = `
+      <div class="wheel-area">
+        <div class="wheel-pointer"></div>
+        <div class="wheel-outer">
+          <div class="wheel" id="wheel"></div>
+          <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+        </div>
+      </div>
+      <div class="reveal-area" id="reveal-area">
+        <button class="primary-cta" id="spin-btn">🎯 交給命運</button>
+      </div>`;
+    renderWheel();
+    resetReveal();
+    return;
+  }
+
+  const modeLabel = WHEEL_MODES[state.activeMode].labelZh;
+  if (present === 1) {
+    // 單品類特例：不畫轉盤，顯示一張大卡，點進清單
+    const c = state.detectedCuisines[0];
+    stage.innerHTML = `
+      <div class="single-card-wrap">
+        <div class="single-card" id="single-card">
+          <div class="big-emoji">${c.category.emoji}</div>
+          <div>
+            <div class="sc-name">${c.category.labelZh}</div>
+            <div class="sc-meta">範圍內 ${c.restaurantCount}+ 家 · 點我看餐廳 →</div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('single-card').addEventListener('click', () => {
+      state.selectedCuisine = c.category;
+      navigate('list');
+    });
+    return;
+  }
+
+  // present === 0：空狀態
+  stage.innerHTML = `
+    <div class="center-state" style="padding:40px 20px;">
+      <div class="emoji">${WHEEL_MODES[state.activeMode].emoji}</div>
+      <div class="msg">這區沒有${modeLabel}</div>
+      <div class="hint">換個模式，或返回放大範圍</div>
+    </div>`;
+}
+
+function renderModeTabs() {
+  const wrap = document.getElementById('mode-tabs');
+  wrap.innerHTML = MODE_ORDER.map((mode) => {
+    const m = WHEEL_MODES[mode];
+    return `<button class="mode-tab ${mode === state.activeMode ? 'active' : ''}" data-mode="${mode}">
+      <span class="emoji">${m.emoji}</span><span>${m.labelZh}</span>
+    </button>`;
+  }).join('');
+  wrap.querySelectorAll('.mode-tab').forEach((el) => {
+    el.addEventListener('click', () => switchMode(el.getAttribute('data-mode')));
+  });
+}
+
+async function switchMode(mode) {
+  if (mode === state.activeMode && state.detectedCuisines.length > 0) return;
+  state.activeMode = mode;
+  state.selectedCuisine = null;
+  renderModeTabs();
+  const includeMainTier2 = mode === 'main' && state.mainSecondLoaded;
+  const cacheKey = mode === 'main' && includeMainTier2 ? 'main2' : mode;
+  if (state.detectedByMode[cacheKey]) {
+    state.detectedCuisines = state.detectedByMode[cacheKey];
+    renderWheelStage();
+    return;
+  }
+  setLoading(true, `偵測附近${WHEEL_MODES[mode].labelZh}…`);
+  try {
+    await detectMode(mode, { includeMainTier2 });
+  } catch (err) {
+    state.detectedCuisines = [];
+  } finally {
+    setLoading(false);
+  }
+  renderWheelStage();
+}
+
+function renderMainMoreBtn() {
+  const wrap = document.getElementById('main-more-wrap');
+  if (!wrap) return;
+  const show = state.activeMode === 'main' && !state.mainSecondLoaded;
+  wrap.hidden = !show;
+  if (show) {
+    const btn = document.getElementById('main-more-btn');
+    btn.onclick = async () => {
+      setLoading(true, '探索更多正餐…');
+      try {
+        await detectMode('main', { includeMainTier2: true });
+      } catch (err) {
+        // 失敗保留原 tier1
+      } finally {
+        setLoading(false);
+      }
+      renderWheelStage();
+    };
+  }
 }
 
 function renderContextChipsWheel() {
@@ -1143,8 +1379,7 @@ function renderContextChipsWheel() {
       else state.selectedContexts.add(id);
       el.classList.toggle('active');
       // Re-render cuisines + wheel so highlights / weights refresh
-      renderCuisineChips();
-      renderWheel();
+      renderWheelStage();
     });
   });
 }
@@ -1288,8 +1523,7 @@ function renderWinnerCard(winner) {
     </div>
   `;
   document.getElementById('respin-btn').addEventListener('click', () => {
-    renderWheel();
-    resetReveal();
+    renderWheelStage();
   });
   document.getElementById('enter-list-btn').addEventListener('click', () => navigate('list'));
 }
@@ -1357,7 +1591,7 @@ async function onMountList() {
   try {
     const places = await fetchNearby(
       state.area.lat, state.area.lng, state.radius,
-      state.selectedCuisine.googleType, PLACES_SEARCH_MASK, 20
+      state.selectedCuisine.types, PLACES_SEARCH_MASK, 20
     );
     let withDistance = places.map((p) => ({
       placeId: p.id,
