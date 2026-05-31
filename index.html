@@ -1752,8 +1752,13 @@ function renderWheel() {
 
 function resetReveal() {
   const area = document.getElementById('reveal-area');
-  area.innerHTML = '<button class="primary-cta" id="spin-btn">🎯 交給命運</button>';
+  // 店家轉盤「待轉」狀態也常駐「看附近全部」入口（T-050：轉之前就能看清單）
+  const viewAllBtn = state.wheelKind === 'shop'
+    ? `<button class="secondary-btn" id="shop-viewall-btn" style="width:100%; margin-top:10px;">看附近全部${TOP_MODES[state.activeTop].category.labelZh} →</button>`
+    : '';
+  area.innerHTML = '<button class="primary-cta" id="spin-btn">🎯 交給命運</button>' + viewAllBtn;
   document.getElementById('spin-btn').addEventListener('click', spin);
+  document.getElementById('shop-viewall-btn')?.addEventListener('click', viewAllNearbyShops);
 }
 
 function weightedRandomIdx(cuisines, contextIds) {
