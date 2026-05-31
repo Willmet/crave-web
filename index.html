@@ -437,6 +437,7 @@
   }
   .winner-name { font-size: 22px; font-weight: 800; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.015em; }
   .winner-meta { font-size: 13px; color: var(--muted-stone); }
+  .winner-card .review-block { border-radius: 12px; margin: 0 0 14px; border-top: none; }
   .winner-btn-row { display: flex; gap: 10px; }
   .secondary-btn {
     appearance: none; flex: 1; padding: 13px 0;
@@ -491,6 +492,7 @@
   .card .addr { font-size: 12px; color: var(--light-steel); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .meta { display: flex; flex-wrap: wrap; gap: 10px; }
   .card .meta .rating { font-size: 12px; font-weight: 600; color: #F59E0B; }
+  .card .meta .price { font-size: 12px; font-weight: 600; color: var(--muted-stone); }
   .card .meta .dist { font-size: 12px; color: var(--light-steel); }
   .card .meta .open { font-size: 12px; font-weight: 600; color: #34C759; }
   .card .meta .closed { font-size: 12px; font-weight: 600; color: #EF4444; }
@@ -640,19 +642,23 @@
     <div class="mode-tabs sub-tabs" id="food-subtabs" hidden></div>
 
     <div class="wheel-scroll">
-      <!-- 情境 chips（多選） -->
-      <div class="section-head">
-        <span class="title">心情情境</span>
-        <span class="hint">可多選，影響推薦排序</span>
+      <!-- 情境 chips（多選；僅正餐顯示） -->
+      <div id="context-section">
+        <div class="section-head">
+          <span class="title">心情情境</span>
+          <span class="hint">可多選，影響推薦排序</span>
+        </div>
+        <div class="chip-wrap" id="context-chips-wheel"></div>
       </div>
-      <div class="chip-wrap" id="context-chips-wheel"></div>
 
-      <!-- 偵測到的菜系 chips（單選跳過轉盤；不選則用整盤轉） -->
-      <div class="section-head">
-        <span class="title"><span id="cuisine-count">0</span> 種入圍</span>
-        <span class="hint">直接點即跳餐廳；或下方按轉</span>
+      <!-- 偵測到的菜系 chips（單選跳過轉盤；不選則用整盤轉；食物三組顯示） -->
+      <div id="cuisine-section">
+        <div class="section-head">
+          <span class="title"><span id="cuisine-count">0</span> 種入圍</span>
+          <span class="hint">直接點即跳餐廳；或下方按轉</span>
+        </div>
+        <div class="chip-wrap" id="cuisine-chips"></div>
       </div>
-      <div class="chip-wrap" id="cuisine-chips"></div>
 
       <!-- 轉盤 / 單品類特例 容器 -->
       <div id="wheel-stage">
@@ -833,6 +839,7 @@ const PLACES_SEARCH_MASK = [
   'places.formattedAddress', 'places.location', 'places.rating',
   'places.userRatingCount', 'places.types', 'places.primaryType',
   'places.photos', 'places.currentOpeningHours.openNow',
+  'places.priceLevel', 'places.priceRange',
 ].join(',');
 
 // ────────────────────────────────────────────────────────────────────
@@ -1302,24 +1309,23 @@ function isSingleTop() { return !!TOP_MODES[state.activeTop].single; }
 
 // 依當前情境 + detectedCuisines 決定畫轉盤 / 單品類進清單 / 空狀態
 function renderWheelStage() {
-  // 單品類頂層：不畫轉盤、不顯示情境chips、不顯示菜系入圍區與 more 鈕；直接判定
-  const ctxHead = document.querySelector('#context-chips-wheel')?.previousElementSibling;
-  const cuisineHead = document.querySelector('#cuisine-chips')?.previousElementSibling;
+  // 顯示控制：以 wrapper toggle .hidden（穩健寫法，不靠 previousElementSibling）
+  //   情境(#context-section)：只有正餐顯示（food + main）
+  //   入圍菜式(#cuisine-section)：食物三組顯示（wheelKind==='cuisine'）；單品類隱藏
+  const ctxSection = document.getElementById('context-section');
+  const cuisineSection = document.getElementById('cuisine-section');
+  const showContext = state.activeTop === 'food' && state.activeFoodGroup === 'main';
+  const showCuisine = state.wheelKind === 'cuisine';
+  if (ctxSection) ctxSection.hidden = !showContext;
+  if (cuisineSection) cuisineSection.hidden = !showCuisine;
+
+  // 單品類頂層：不畫轉盤、不顯示 more 鈕；直接判定店家轉盤
   if (isSingleTop()) {
-    if (ctxHead) ctxHead.hidden = true;
-    document.getElementById('context-chips-wheel').hidden = true;
-    if (cuisineHead) cuisineHead.hidden = true;
-    document.getElementById('cuisine-chips').hidden = true;
     const moreWrap = document.getElementById('main-more-wrap');
     if (moreWrap) moreWrap.hidden = true;
     renderSingleStage();
     return;
   }
-  // 食物模式：情境chips / 菜系入圍 恢復顯示
-  if (ctxHead) ctxHead.hidden = false;
-  document.getElementById('context-chips-wheel').hidden = false;
-  if (cuisineHead) cuisineHead.hidden = false;
-  document.getElementById('cuisine-chips').hidden = false;
 
   document.getElementById('cuisine-count').textContent = state.detectedCuisines.length;
   renderCuisineChips();      // chips（直選）永遠顯示
@@ -1412,26 +1418,69 @@ function renderSingleStage() {
             <div class="sc-meta">${shopMetaLine(p)} · 點我導航 →</div>
           </div>
         </div>
+        <button class="secondary-btn" id="shop-viewall-btn" style="width:100%; margin-top:14px;">看附近全部${t.category.labelZh} →</button>
       </div>`;
     document.getElementById('single-card').addEventListener('click', () => openShopMaps(p));
+    document.getElementById('shop-viewall-btn').addEventListener('click', viewAllNearbyShops);
     return;
   }
+  // shops.length === 0：空狀態，仍放「看附近全部」當備援（onMountList 會重抓全部）
   stage.innerHTML = `
     <div class="center-state" style="padding:40px 20px;">
       <div class="emoji">${t.emoji}</div>
       <div class="msg">這區沒有${t.category.labelZh}</div>
       <div class="hint">換個分類，或返回放大範圍</div>
+      <button class="secondary-btn" id="shop-viewall-btn" style="margin-top:20px; max-width:240px;">看附近全部${t.category.labelZh} →</button>
     </div>`;
+  document.getElementById('shop-viewall-btn').addEventListener('click', viewAllNearbyShops);
 }
 
 // 店家 meta 摘要行：⭐評分(評論數) · 距離 · 營業中
 function shopMetaLine(p) {
   const parts = [];
   if (p.rating !== undefined) parts.push(`⭐ ${p.rating.toFixed(1)}${p.userRatingCount !== undefined ? ` (${p.userRatingCount})` : ''}`);
+  const price = priceDisplay(p);
+  if (price) parts.push(price);
   const dist = p.distance >= 1000 ? `${(p.distance/1000).toFixed(1)} km` : `${Math.round(p.distance)} m`;
   parts.push(`📍 ${dist}`);
   if (p.openNow === true) parts.push('營業中');
   return parts.join(' · ');
+}
+
+// 人均消費顯示：優先 priceRange（NT$X–Y/人），fallback priceLevel（$ / $$ / $$$ / $$$$），都沒有回 ''
+const CURRENCY_SYMBOL = { TWD: 'NT$', USD: '$', JPY: '¥', EUR: '€', KRW: '₩', CNY: '¥', HKD: 'HK$', GBP: '£' };
+const PRICE_LEVEL_DOLLARS = {
+  PRICE_LEVEL_FREE: '免費',
+  PRICE_LEVEL_INEXPENSIVE: '$',
+  PRICE_LEVEL_MODERATE: '$$',
+  PRICE_LEVEL_EXPENSIVE: '$$$',
+  PRICE_LEVEL_VERY_EXPENSIVE: '$$$$',
+};
+function priceDisplay(p) {
+  if (!p) return '';
+  const pr = p.priceRange;
+  const sUnits = pr?.startPrice?.units;
+  const eUnits = pr?.endPrice?.units;
+  if (sUnits != null || eUnits != null) {
+    const cc = pr.startPrice?.currencyCode || pr.endPrice?.currencyCode || 'TWD';
+    const sym = CURRENCY_SYMBOL[cc] || `${cc} `;
+    const s = sUnits != null ? Number(sUnits).toLocaleString() : null;
+    const e = eUnits != null ? Number(eUnits).toLocaleString() : null;
+    let body;
+    if (s != null && e != null) body = `${s}–${e}`;
+    else if (s != null) body = `${s}+`;
+    else body = `~${e}`;
+    return `${sym}${body}/人`;
+  }
+  if (p.priceLevel && PRICE_LEVEL_DOLLARS[p.priceLevel]) return PRICE_LEVEL_DOLLARS[p.priceLevel];
+  return '';
+}
+
+// 單品類「看附近全部」：設 selectedCuisine = 該模式 category（含 types）→ 進清單頁（沿用 onMountList）
+function viewAllNearbyShops() {
+  const t = TOP_MODES[state.activeTop];
+  state.selectedCuisine = t.category;
+  navigate('list');
 }
 
 function openShopMaps(p) {
@@ -1552,6 +1601,8 @@ async function loadShopSlices() {
       rating: p.rating,
       userRatingCount: p.userRatingCount,
       openNow: p.currentOpeningHours?.openNow,
+      priceLevel: p.priceLevel,
+      priceRange: p.priceRange,
       distance: haversine(state.area.lat, state.area.lng, p.location?.latitude || 0, p.location?.longitude || 0),
     }));
     if (state.openNowOnly) mapped = mapped.filter((p) => p.openNow === true);
@@ -1792,7 +1843,8 @@ function renderWinnerCard(winner) {
 // 單品類店家轉盤 winner：店名 + ⭐評分 + 距離 + 營業中 + 導航前往 + 再轉一次
 function renderShopWinnerCard(p) {
   const area = document.getElementById('reveal-area');
-  const emoji = TOP_MODES[state.activeTop].category.emoji;
+  const t = TOP_MODES[state.activeTop];
+  const emoji = t.category.emoji;
   area.innerHTML = `
     <div class="winner-card">
       <div class="winner-label">命定之選</div>
@@ -1803,16 +1855,28 @@ function renderShopWinnerCard(p) {
           <div class="winner-meta">${shopMetaLine(p)}</div>
         </div>
       </div>
+      <div class="review-block" data-review-for="${p.placeId}"><div class="review-loading">📝 載入評論…</div></div>
       <div class="winner-btn-row">
         <button class="secondary-btn" id="respin-btn">再轉一次</button>
         <button class="primary-btn" id="shop-nav-btn">導航前往 →</button>
       </div>
+      <button class="secondary-btn" id="shop-viewall-btn" style="width:100%; margin-top:10px;">看附近全部${t.category.labelZh} →</button>
     </div>
   `;
   document.getElementById('respin-btn').addEventListener('click', () => {
     renderWheelStage();
   });
   document.getElementById('shop-nav-btn').addEventListener('click', () => openShopMaps(p));
+  document.getElementById('shop-viewall-btn').addEventListener('click', viewAllNearbyShops);
+  // async 抓最新 3 則評論 → 渲染（重用 renderRestaurantReviewBlock）
+  (async () => {
+    try {
+      const reviews = await fetchPlaceReviews(p.placeId);
+      renderRestaurantReviewBlock(p.placeId, reviews);
+    } catch (e) {
+      renderRestaurantReviewBlock(p.placeId, []);
+    }
+  })();
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -1891,6 +1955,8 @@ async function onMountList() {
       types: p.types || [],
       photos: (p.photos || []).map((ph) => buildPhotoUrl(ph.name)),
       openNow: p.currentOpeningHours?.openNow,
+      priceLevel: p.priceLevel,
+      priceRange: p.priceRange,
       distance: haversine(state.area.lat, state.area.lng, p.location?.latitude || 0, p.location?.longitude || 0),
       reviews: null, // fetched on demand for top-5
     }));
@@ -1951,6 +2017,8 @@ function renderRestaurantList() {
     const dist = p.distance >= 1000 ? `${(p.distance/1000).toFixed(1)} km` : `${Math.round(p.distance)} m`;
     const openTag = p.openNow === true ? '<span class="open">營業中</span>' : p.openNow === false ? '<span class="closed">休息中</span>' : '';
     const rating = p.rating !== undefined ? `<span class="rating">⭐ ${p.rating.toFixed(1)}${p.userRatingCount !== undefined ? ` (${p.userRatingCount})` : ''}</span>` : '';
+    const price = priceDisplay(p);
+    const priceTag = price ? `<span class="price">${escapeHTML(price)}</span>` : '';
     const imgStyle = p.photos && p.photos.length > 0 ? `background-image:url('${p.photos[0]}')` : '';
     const isTop5 = i < 5;
     const reviewSlot = isTop5 ? `<div class="review-block" data-review-for="${p.placeId}"><div class="review-loading">📝 載入評論…</div></div>` : '';
@@ -1962,7 +2030,7 @@ function renderRestaurantList() {
           <div class="body">
             <div class="name">${escapeHTML(p.name)}</div>
             <div class="addr">${escapeHTML(p.address || '地址未提供')}</div>
-            <div class="meta">${rating}<span class="dist">📍 ${dist}</span>${openTag}</div>
+            <div class="meta">${rating}${priceTag}<span class="dist">📍 ${dist}</span>${openTag}</div>
           </div>
         </div>
         ${reviewSlot}
