@@ -849,6 +849,9 @@ const state = {
   detectedByMode: {},            // 偵測結果快取，避免重打 { key: [{category,restaurantCount}] }
   mainSecondLoaded: false,       // 正餐 tier2 是否已偵測
   selectedCuisine: null,         // 存 category 物件（含 types 陣列）
+  wheelKind: 'cuisine',          // 'cuisine'（食物：轉品類）| 'shop'（單品類：轉店家）
+  shopSlices: [],                // 單品類模式：上轉盤的附近店家（已 mapped 物件）
+  selectedShop: null,            // 單品類轉盤轉中的店家
   restaurants: [],
   rankedRestaurants: [],
   selectedContexts: new Set(),
@@ -1373,29 +1376,44 @@ function renderWheelStage() {
     </div>`;
 }
 
-// 單品類頂層（手搖/咖啡/微醺）：有就顯示一張大卡（點即進清單），無就空狀態。
-// 注意：不在 render 階段自動 navigate（避免從清單返回時無限跳回）；
-//   首次切該頂層時的自動進清單由 detectAndRender 負責。
+// 單品類頂層（手搖/咖啡/微醺）：店家轉盤
+//   店家 >=2 → 畫轉盤（slice=店家），轉到哪家=推薦那家
+//   店家 ==1 → 單店大卡（可點導航）
+//   店家 ==0 → 空狀態
 function renderSingleStage() {
   const stage = document.getElementById('wheel-stage');
   const t = TOP_MODES[state.activeTop];
-  const present = state.detectedCuisines.length;
-  if (present >= 1) {
-    const cnt = state.detectedCuisines[0].restaurantCount;
+  const shops = state.shopSlices;
+  if (shops.length >= 2) {
+    stage.innerHTML = `
+      <div class="wheel-area">
+        <div class="wheel-pointer"></div>
+        <div class="wheel-outer">
+          <div class="wheel" id="wheel"></div>
+          <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+        </div>
+      </div>
+      <div class="reveal-area" id="reveal-area">
+        <button class="primary-cta" id="spin-btn">🎯 交給命運</button>
+      </div>`;
+    renderWheel();
+    resetReveal();
+    return;
+  }
+  if (shops.length === 1) {
+    const p = shops[0];
+    state.selectedShop = p;
     stage.innerHTML = `
       <div class="single-card-wrap">
         <div class="single-card" id="single-card">
           <div class="big-emoji">${t.category.emoji}</div>
           <div>
-            <div class="sc-name">${t.category.labelZh}</div>
-            <div class="sc-meta">範圍內 ${cnt}+ 家 · 點我看餐廳 →</div>
+            <div class="sc-name">${escapeHTML(p.name)}</div>
+            <div class="sc-meta">${shopMetaLine(p)} · 點我導航 →</div>
           </div>
         </div>
       </div>`;
-    document.getElementById('single-card').addEventListener('click', () => {
-      state.selectedCuisine = t.category;
-      navigate('list');
-    });
+    document.getElementById('single-card').addEventListener('click', () => openShopMaps(p));
     return;
   }
   stage.innerHTML = `
@@ -1404,6 +1422,27 @@ function renderSingleStage() {
       <div class="msg">這區沒有${t.category.labelZh}</div>
       <div class="hint">換個分類，或返回放大範圍</div>
     </div>`;
+}
+
+// 店家 meta 摘要行：⭐評分(評論數) · 距離 · 營業中
+function shopMetaLine(p) {
+  const parts = [];
+  if (p.rating !== undefined) parts.push(`⭐ ${p.rating.toFixed(1)}${p.userRatingCount !== undefined ? ` (${p.userRatingCount})` : ''}`);
+  const dist = p.distance >= 1000 ? `${(p.distance/1000).toFixed(1)} km` : `${Math.round(p.distance)} m`;
+  parts.push(`📍 ${dist}`);
+  if (p.openNow === true) parts.push('營業中');
+  return parts.join(' · ');
+}
+
+function openShopMaps(p) {
+  console.log('[wheel] shop pick', {
+    ts: Date.now(),
+    area: state.area?.address ?? null,
+    cuisine: state.selectedCuisine?.id ?? null,
+    finalPlaceId: p.placeId,
+    userAction: 'shop_pick',
+  });
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}&query_place_id=${p.placeId}`, '_blank');
 }
 
 function renderTopTabs() {
@@ -1456,20 +1495,27 @@ async function switchFoodGroup(group) {
 }
 
 // 偵測當前情境（含快取）後重繪 stage
+//   食物 → wheelKind='cuisine'（偵測品類上轉盤）
+//   單品類 → wheelKind='shop'（直接抓附近店家上轉盤，不偵測品類）
 async function detectAndRender() {
   const single = isSingleTop();
-  const group = state.activeFoodGroup;
-  const isMain = !single && group === 'main';
-  const includeMainTier2 = isMain && state.mainSecondLoaded;
-  let cacheKey = single ? state.activeTop : `food.${group}`;
-  if (isMain && includeMainTier2) cacheKey = 'food.main2';
-  if (state.detectedByMode[cacheKey]) {
-    state.detectedCuisines = state.detectedByMode[cacheKey];
-    if (single && maybeAutoEnterSingle()) return;
+  state.wheelKind = single ? 'shop' : 'cuisine';
+  if (single) {
+    await loadShopSlices();
     renderWheelStage();
     return;
   }
-  const label = single ? TOP_MODES[state.activeTop].category.labelZh : TOP_MODES.food.groups[group].labelZh;
+  const group = state.activeFoodGroup;
+  const isMain = group === 'main';
+  const includeMainTier2 = isMain && state.mainSecondLoaded;
+  let cacheKey = `food.${group}`;
+  if (isMain && includeMainTier2) cacheKey = 'food.main2';
+  if (state.detectedByMode[cacheKey]) {
+    state.detectedCuisines = state.detectedByMode[cacheKey];
+    renderWheelStage();
+    return;
+  }
+  const label = TOP_MODES.food.groups[group].labelZh;
   setLoading(true, `偵測附近${label}…`);
   try {
     await detectContext(state.activeTop, group, { includeMainTier2 });
@@ -1478,24 +1524,53 @@ async function detectAndRender() {
   } finally {
     setLoading(false);
   }
-  if (single && maybeAutoEnterSingle()) return;
   renderWheelStage();
 }
 
-// 單品類頂層：偵測後有店即直接進清單（spec：點頂tab→偵測→navigate('list')）。回傳是否已導向。
-function maybeAutoEnterSingle() {
-  if (state.detectedCuisines.length < 1) return false;
+// 單品類頂層：用該 category.types 比照清單 mask 抓附近店家 → state.shopSlices（前 10；>10 隨機抽 10）
+async function loadShopSlices() {
   const t = TOP_MODES[state.activeTop];
-  state.selectedCuisine = t.category;
-  console.log('[wheel] single-top auto-enter', {
-    ts: Date.now(),
-    area: state.area?.address ?? null,
-    cuisine: t.category.id,
-    restaurantCount: state.detectedCuisines[0].restaurantCount,
-    userAction: 'single_top_enter',
-  });
-  navigate('list');
-  return true;
+  state.selectedCuisine = t.category; // 清單頁/title 仍需要 category
+  const cacheKey = `shop.${state.activeTop}`;
+  if (state.detectedByMode[cacheKey]) {
+    state.shopSlices = state.detectedByMode[cacheKey];
+    return;
+  }
+  setLoading(true, `搜尋附近${t.category.labelZh}…`);
+  let shops = [];
+  try {
+    const places = await fetchNearby(
+      state.area.lat, state.area.lng, state.radius,
+      t.category.types, PLACES_SEARCH_MASK, 12
+    );
+    let mapped = places.map((p) => ({
+      placeId: p.id,
+      name: p.displayName?.text || '',
+      address: p.shortFormattedAddress || p.formattedAddress || '',
+      lat: p.location?.latitude || 0,
+      lng: p.location?.longitude || 0,
+      rating: p.rating,
+      userRatingCount: p.userRatingCount,
+      openNow: p.currentOpeningHours?.openNow,
+      distance: haversine(state.area.lat, state.area.lng, p.location?.latitude || 0, p.location?.longitude || 0),
+    }));
+    if (state.openNowOnly) mapped = mapped.filter((p) => p.openNow === true);
+    // 前 10 上轉盤；>10 隨機抽 10
+    if (mapped.length > 10) {
+      for (let i = mapped.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [mapped[i], mapped[j]] = [mapped[j], mapped[i]];
+      }
+      mapped = mapped.slice(0, 10);
+    }
+    shops = mapped;
+  } catch (err) {
+    shops = [];
+  } finally {
+    setLoading(false);
+  }
+  state.detectedByMode[cacheKey] = shops;
+  state.shopSlices = shops;
 }
 
 function renderMainMoreBtn() {
@@ -1575,18 +1650,37 @@ function renderCuisineChips() {
   });
 }
 
+// 取當前轉盤的 slice 來源（cuisine→detectedCuisines；shop→shopSlices）
+function wheelItems() {
+  return state.wheelKind === 'shop' ? state.shopSlices : state.detectedCuisines;
+}
+// slice 顯示：emoji + label（店名過長截斷 8 字）
+function sliceDisplay(item, i) {
+  if (state.wheelKind === 'shop') {
+    const emoji = TOP_MODES[state.activeTop].category.emoji;
+    let name = item.name || '店家';
+    if (name.length > 8) name = name.slice(0, 8) + '…';
+    return { emoji, label: name, mark: '' };
+  }
+  const ctxIds = [...state.selectedContexts];
+  const w = computeContextWeight(item.category.id, ctxIds);
+  const mark = ctxIds.length > 0 && w > 1.0 ? '✨' : '';
+  return { emoji: item.category.emoji, label: item.category.labelZh, mark };
+}
+
 function renderWheel() {
   const wheel = document.getElementById('wheel');
   wheel.innerHTML = '';
   wheel.style.transform = 'rotate(0deg)';
   currentRotation = 0;
 
-  const n = state.detectedCuisines.length;
+  const items = wheelItems();
+  const n = items.length;
   if (n === 0) return;
   const sliceAngle = 360 / n;
 
   const offset = sliceAngle / 2;
-  const stops = state.detectedCuisines.map((c, i) => {
+  const stops = items.map((c, i) => {
     const colour = SLICE_COLOURS[i % SLICE_COLOURS.length];
     const start = (i * sliceAngle - offset).toFixed(3);
     const end = ((i + 1) * sliceAngle - offset).toFixed(3);
@@ -1594,14 +1688,12 @@ function renderWheel() {
   }).join(', ');
   wheel.style.background = `conic-gradient(from -${offset.toFixed(3)}deg, ${stops})`;
 
-  const ctxIds = [...state.selectedContexts];
-  state.detectedCuisines.forEach((c, i) => {
+  items.forEach((c, i) => {
     const sliceCentre = i * sliceAngle + offset;
-    const w = computeContextWeight(c.category.id, ctxIds);
-    const mark = ctxIds.length > 0 && w > 1.0 ? '✨' : '';
+    const d = sliceDisplay(c, i);
     const label = document.createElement('div');
     label.className = 'slice-label';
-    label.innerHTML = `<span class="emoji">${c.category.emoji}</span>${mark}${c.category.labelZh}`;
+    label.innerHTML = `<span class="emoji">${d.emoji}</span>${d.mark}${escapeHTML(d.label)}`;
     label.style.transform = `translate(-50%, -50%) rotate(${sliceCentre}deg) translateY(-100px)`;
     wheel.appendChild(label);
   });
@@ -1625,13 +1717,15 @@ function weightedRandomIdx(cuisines, contextIds) {
 }
 
 function spin() {
-  const n = state.detectedCuisines.length;
+  const isShop = state.wheelKind === 'shop';
+  const items = wheelItems();
+  const n = items.length;
   if (n === 0) return;
   const sliceAngle = 360 / n;
   const ctxIds = [...state.selectedContexts];
-  const targetIdx = ctxIds.length > 0
-    ? weightedRandomIdx(state.detectedCuisines, ctxIds)
-    : Math.floor(Math.random() * n);
+  const targetIdx = isShop
+    ? Math.floor(Math.random() * n)
+    : (ctxIds.length > 0 ? weightedRandomIdx(state.detectedCuisines, ctxIds) : Math.floor(Math.random() * n));
   const targetCentre = targetIdx * sliceAngle + sliceAngle / 2;
   const desiredEnd = SPIN_TURNS * 360 + (360 - targetCentre);
   const finalRot = currentRotation + desiredEnd;
@@ -1644,7 +1738,20 @@ function spin() {
   area.innerHTML = '<div class="spinning-hint">轉動中…</div>';
 
   setTimeout(() => {
-    const winner = state.detectedCuisines[targetIdx];
+    if (isShop) {
+      const winner = items[targetIdx];
+      state.selectedShop = winner;
+      renderShopWinnerCard(winner);
+      console.log('[wheel] shop spin', {
+        ts: Date.now(),
+        area: state.area?.address ?? null,
+        cuisine: state.selectedCuisine?.id ?? null,
+        finalPlaceId: winner.placeId,
+        userAction: 'shop_spin',
+      });
+      return;
+    }
+    const winner = items[targetIdx];
     state.selectedCuisine = winner.category;
     renderWinnerCard(winner);
     console.log('[wheel] cuisine spin', {
@@ -1680,6 +1787,32 @@ function renderWinnerCard(winner) {
     renderWheelStage();
   });
   document.getElementById('enter-list-btn').addEventListener('click', () => navigate('list'));
+}
+
+// 單品類店家轉盤 winner：店名 + ⭐評分 + 距離 + 營業中 + 導航前往 + 再轉一次
+function renderShopWinnerCard(p) {
+  const area = document.getElementById('reveal-area');
+  const emoji = TOP_MODES[state.activeTop].category.emoji;
+  area.innerHTML = `
+    <div class="winner-card">
+      <div class="winner-label">命定之選</div>
+      <div class="winner-row">
+        <div class="winner-emoji-circle">${emoji}</div>
+        <div>
+          <div class="winner-name">${escapeHTML(p.name)}</div>
+          <div class="winner-meta">${shopMetaLine(p)}</div>
+        </div>
+      </div>
+      <div class="winner-btn-row">
+        <button class="secondary-btn" id="respin-btn">再轉一次</button>
+        <button class="primary-btn" id="shop-nav-btn">導航前往 →</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('respin-btn').addEventListener('click', () => {
+    renderWheelStage();
+  });
+  document.getElementById('shop-nav-btn').addEventListener('click', () => openShopMaps(p));
 }
 
 // ────────────────────────────────────────────────────────────────────
