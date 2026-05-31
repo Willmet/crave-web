@@ -27,7 +27,7 @@
 <meta name="twitter:image" content="twitter-card.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" />
 <style>
   :root {
     /* Brand */
@@ -45,11 +45,12 @@
     --grey-light: var(--fog);
     --grey-mid: var(--light-steel);
     --grey-dark: var(--ink);
-    --slice-1: #FF6B35;
-    --slice-2: #FFB347;
-    --slice-3: #F59E0B;
-    --slice-4: #FF8C42;
-    --slice-5: #FFA552;
+    --slice-1: #FFD9C2;
+    --slice-2: #F7B58C;
+    --slice-3: #FF9E6D;
+    --slice-4: #E8825A;
+    --slice-5: #F4C4A0;
+    --slice-6: #FB8C5E;
     --radius-card: 24px;
     --radius-img: 12px;
     --radius-input: 16px;
@@ -62,7 +63,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; height: 100%;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
     color: var(--ink);
     background: var(--canvas);
     overflow: hidden;
@@ -88,7 +89,7 @@
     border-bottom: 1px solid var(--fog);
     background: #fff;
   }
-  header.brand img { width: 32px; height: 32px; }
+  header.brand img { width: 34px; height: 34px; border-radius: 50%; background: #F7E2D3; padding: 3px; box-sizing: border-box; box-shadow: 0 1px 3px rgba(214,138,94,0.25); }
   header.brand .brand-text { display: flex; flex-direction: column; }
   header.brand h1 { margin: 0; font-size: 22px; font-weight: 800; color: var(--brand); letter-spacing: -0.015em; }
   header.brand .tagline { margin: 1px 0 0; font-size: 11px; color: var(--light-steel); }
@@ -397,8 +398,8 @@
     top: 50%; left: 50%;
     width: 86px;
     text-align: center;
-    color: #fff; font-size: 11px; font-weight: 800;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    color: #17191C; font-size: 11px; font-weight: 800;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.4);
     line-height: 1.15;
     pointer-events: none;
     transform-origin: 50% 50%;
@@ -410,11 +411,11 @@
     top: 50%; left: 50%;
     width: 78px; height: 78px;
     margin: -39px 0 0 -39px;
-    background: #fff;
-    border: 3px solid var(--ink);
+    background: #F7E2D3;
+    border: 2px solid rgba(23,25,28,0.85);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(214,138,94,0.3), inset 0 0 0 4px #FFF1E6;
     z-index: 4;
   }
   .wheel-hub img { width: 62%; height: 62%; object-fit: contain; }
@@ -666,7 +667,7 @@
           <div class="wheel-pointer"></div>
           <div class="wheel-outer">
             <div class="wheel" id="wheel"></div>
-            <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+            <div class="wheel-hub"><img src="logo-hub.png" alt="Crave Logo" /></div>
           </div>
         </div>
 
@@ -722,7 +723,7 @@ const MAX_WHEEL_SLICES = 12;
 const MIN_WHEEL_SLICES = 2;
 const SPIN_DURATION_MS = 4200;
 const SPIN_TURNS = 6;
-const SLICE_COLOURS = ['#FF6B35', '#FFB347', '#F59E0B', '#FF8C42', '#FFA552'];
+const SLICE_COLOURS = ['#FFD9C2', '#F7B58C', '#FF9E6D', '#E8825A', '#F4C4A0', '#FB8C5E'];
 
 // ── 4 頂層轉盤分類（T-046 定稿 source of truth）─────────────────────
 // 頂層 4 tab：食物 / 手搖飲 / 咖啡廳 / 微醺
@@ -1341,7 +1342,7 @@ function renderWheelStage() {
         <div class="wheel-pointer"></div>
         <div class="wheel-outer">
           <div class="wheel" id="wheel"></div>
-          <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+          <div class="wheel-hub"><img src="logo-hub.png" alt="Crave Logo" /></div>
         </div>
       </div>
       <div class="reveal-area" id="reveal-area">
@@ -1396,7 +1397,7 @@ function renderSingleStage() {
         <div class="wheel-pointer"></div>
         <div class="wheel-outer">
           <div class="wheel" id="wheel"></div>
-          <div class="wheel-hub"><img src="logo.png" alt="Crave Logo" /></div>
+          <div class="wheel-hub"><img src="logo-hub.png" alt="Crave Logo" /></div>
         </div>
       </div>
       <div class="reveal-area" id="reveal-area">
